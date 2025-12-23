@@ -53,8 +53,7 @@ class ScraperManager:
             Tuple of (setting_key, scraper_name_clean)
         """
         scraper_name_clean = scraper_name.replace("Scraper", "")
-        setting_name = scraper_name_clean.upper()
-        setting_key = f"SCRAPE_{setting_name}"
+        setting_key = f"SCRAPE_{scraper_name_clean.upper()}"
         return setting_key, scraper_name_clean
 
     def get_recommended_scrapers(self) -> list:
