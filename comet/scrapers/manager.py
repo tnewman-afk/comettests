@@ -3,7 +3,7 @@ import importlib
 import inspect
 import os
 import pkgutil
-from typing import Dict
+from typing import Dict, List, Optional
 
 import aiohttp
 
@@ -89,7 +89,7 @@ class ScraperManager:
         # Return in priority order if found, otherwise return what we have
         return sorted(recommended, key=lambda x: priority_map.get(x, 999))
 
-    def has_enabled_scrapers(self, context: str = "live", enabled_scrapers: list = None) -> bool:
+    def has_enabled_scrapers(self, context: str = "live", enabled_scrapers: Optional[List[str]] = None) -> bool:
         """
         Check if any scrapers are enabled for the given context.
         
