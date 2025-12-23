@@ -10,6 +10,7 @@ from comet.core.logger import logger
 from comet.core.models import database, settings, trackers
 from comet.debrid.manager import get_debrid_extension
 from comet.metadata.manager import MetadataScraper
+from comet.scrapers.manager import scraper_manager
 from comet.services.debrid import DebridService
 from comet.services.lock import DistributedLock, is_scrape_in_progress
 from comet.services.orchestration import TorrentManager
@@ -18,6 +19,17 @@ from comet.utils.network import get_client_ip
 from comet.utils.parsing import parse_media_id
 
 streams = APIRouter()
+
+# Maximum number of scraper recommendations to show in error messages
+MAX_SCRAPER_RECOMMENDATIONS = 4
+
+# Helpful notes about scraper setup requirements
+SCRAPER_SETUP_NOTES = {
+    "Torrentio": " (fast, no setup needed)",
+    "Zilean": " (requires Zilean instance)",
+    "Jackett": " (requires Jackett setup)",
+    "Prowlarr": " (requires Prowlarr setup)",
+}
 
 
 async def is_first_search(media_id: str):
@@ -359,6 +371,42 @@ async def stream(
             # Release lock if we had it but didn't need to scrape
             await scrape_lock.release()
             lock_acquired = False
+
+        # Check if no torrents were found and no scrapers are enabled
+        if len(torrent_manager.torrents) == 0 and not scraper_manager.has_enabled_scrapers("live"):
+            logger.log(
+                "SCRAPER",
+                f"❌ No torrents found for {log_title} and no scrapers are enabled. Please configure scrapers."
+            )
+            
+            # Get recommended scrapers dynamically
+            recommended_scrapers = scraper_manager.get_recommended_scrapers()
+            
+            # Build scraper examples with helpful notes
+            scraper_lines = []
+            for scraper in recommended_scrapers[:MAX_SCRAPER_RECOMMENDATIONS]:
+                line = f"• SCRAPE_{scraper.upper()}=true"
+                # Add helpful setup note if available
+                line += SCRAPER_SETUP_NOTES.get(scraper, "")
+                scraper_lines.append(line)
+            
+            scraper_examples = "\n".join(scraper_lines) if scraper_lines else "• SCRAPE_TORRENTIO=true (fast, no setup needed)"
+            
+            return {
+                "streams": [
+                    {
+                        "name": "[⚠️] Comet - No Scrapers Configured",
+                        "description": (
+                            "No scrapers are enabled in your Comet configuration.\n\n"
+                            "To get results, please enable at least one scraper in your .env file:\n"
+                            f"{scraper_examples}\n\n"
+                            f"Your debrid service ({debrid_service}) is configured correctly, "
+                            "but Comet needs scrapers to find torrents before checking availability."
+                        ),
+                        "url": "https://comet.fast",
+                    }
+                ]
+            }
 
         await debrid_service_instance.check_existing_availability(
             torrent_manager.torrents, season, episode

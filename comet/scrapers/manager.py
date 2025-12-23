@@ -42,6 +42,61 @@ class ScraperManager:
                 ):
                     self.scrapers[obj.__name__] = obj
 
+    def _get_scraper_setting_key(self, scraper_name: str) -> tuple:
+        """
+        Get the setting key and clean name for a scraper.
+        
+        Args:
+            scraper_name: The scraper class name (e.g., "TorrentioScraper")
+            
+        Returns:
+            Tuple of (setting_key, scraper_name_clean)
+        """
+        scraper_name_clean = scraper_name.replace("Scraper", "")
+        setting_key = f"SCRAPE_{scraper_name_clean.upper()}"
+        return setting_key, scraper_name_clean
+
+    def get_recommended_scrapers(self) -> list:
+        """
+        Get a list of recommended scrapers for users to enable.
+        Returns scrapers that are easy to set up or commonly used.
+        """
+        # Prioritize scrapers that work out of the box or are commonly used
+        recommended = []
+        priority_scrapers = ["Torrentio", "Zilean", "Jackett", "Prowlarr"]
+        
+        # Create priority mapping for O(1) lookup during sorting
+        priority_map = {name: i for i, name in enumerate(priority_scrapers)}
+        
+        for scraper_name in self.scrapers.keys():
+            _, scraper_name_clean = self._get_scraper_setting_key(scraper_name)
+            if scraper_name_clean in priority_scrapers:
+                recommended.append(scraper_name_clean)
+        
+        # Return in priority order if found, otherwise return what we have
+        return sorted(recommended, key=lambda x: priority_map.get(x, 999))
+
+    def has_enabled_scrapers(self, context: str = "live") -> bool:
+        """
+        Check if any scrapers are enabled for the given context.
+        
+        Args:
+            context: The context to check ("live" or "background")
+            
+        Returns:
+            True if at least one scraper is enabled, False otherwise
+        """
+        for scraper_name in self.scrapers.keys():
+            setting_key, _ = self._get_scraper_setting_key(scraper_name)
+            
+            if hasattr(settings, setting_key):
+                if settings.is_scraper_enabled(
+                    getattr(settings, setting_key), context
+                ):
+                    return True
+        
+        return False
+
     async def _scrape_wrapper(
         self, name: str, scraper: BaseScraper, request: ScrapeRequest
     ):
@@ -53,12 +108,20 @@ class ScraperManager:
 
     async def scrape_all(self, request: ScrapeRequest, session: aiohttp.ClientSession):
         tasks = []
+        
+        # Check if any scrapers are enabled
+        if not self.has_enabled_scrapers(request.context):
+            logger.warning(
+                f"No scrapers are enabled for context '{request.context}'. "
+                "Please configure at least one scraper in your .env file "
+                "(e.g., SCRAPE_TORRENTIO=true, SCRAPE_ZILEAN=true, etc.) "
+                "to fetch torrents. Without scrapers, no results can be found."
+            )
+        
         for scraper_name, scraper_class in self.scrapers.items():
             # Determine if scraper should be enabled
             # Convention: Scraper class name "NyaaScraper" -> settings.SCRAPE_NYAA
-            scraper_name_clean = scraper_name.replace("Scraper", "")
-            setting_name = scraper_name_clean.upper()
-            setting_key = f"SCRAPE_{setting_name}"
+            setting_key, scraper_name_clean = self._get_scraper_setting_key(scraper_name)
 
             if hasattr(settings, setting_key):
                 if not settings.is_scraper_enabled(
@@ -107,7 +170,7 @@ class ScraperManager:
                         )
 
             else:
-                url_setting_key = f"{setting_name}_URL"
+                url_setting_key = f"{scraper_name_clean.upper()}_URL"
                 if scraper_name == "StremthruScraper":
                     url_setting_key = "STREMTHRU_SCRAPE_URL"
 
