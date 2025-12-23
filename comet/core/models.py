@@ -687,6 +687,7 @@ class ConfigModel(BaseModel):
     debridService: Optional[str] = "torrent"
     debridApiKey: Optional[str] = ""
     debridStreamProxyPassword: Optional[str] = ""
+    scrapers: Optional[List[str]] = ["all"]
     languages: Optional[dict] = rtn_settings_default_dumped["languages"]
     resolutions: Optional[dict] = rtn_settings_default_dumped["resolutions"]
     options: Optional[dict] = rtn_settings_default_dumped["options"]
@@ -746,6 +747,22 @@ web_config = {
         "size",
         "tracker",
         "languages",
+    ],
+    "availableScrapers": [
+        "Aiostreams",
+        "Bitmagnet",
+        "Comet",
+        "Debridio",
+        "Jackett",
+        "Jackettio",
+        "MediaFusion",
+        "Nyaa",
+        "Prowlarr",
+        "Stremthru",
+        "Torbox",
+        "Torrentio",
+        "YGGTorrent",
+        "Zilean",
     ],
 }
 

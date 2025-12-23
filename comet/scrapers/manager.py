@@ -123,6 +123,12 @@ class ScraperManager:
             # Convention: Scraper class name "NyaaScraper" -> settings.SCRAPE_NYAA
             setting_key, scraper_name_clean = self._get_scraper_setting_key(scraper_name)
 
+            # Check if scraper is in user's selection (if specified)
+            if request.enabled_scrapers is not None and len(request.enabled_scrapers) > 0:
+                # If user specified scrapers and this one isn't in the list, skip it
+                if scraper_name_clean not in request.enabled_scrapers:
+                    continue
+
             if hasattr(settings, setting_key):
                 if not settings.is_scraper_enabled(
                     getattr(settings, setting_key), request.context

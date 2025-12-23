@@ -433,6 +433,12 @@
       <sl-input id="debridApiKey" placeholder="Enter API key"></sl-input>
     </div>
 
+    <div class="form-item">
+      <sl-select id="scrapers" multiple clearable label="Scrapers" 
+        placeholder="Select scrapers to use"
+        help-text="Select which scrapers to use for finding torrents. All scrapers are selected by default."></sl-select>
+    </div>
+
     <sl-details summary="Advanced Settings">
       <div class="form-item">
         <sl-input id="rankThreshold" type="number" value="-10000000000" label="Minimum Rank Threshold"
@@ -607,6 +613,7 @@
           "la": "💃🏻",  // Latino
         };
         let defaultResultFormat = [];
+        let defaultScrapers = [];
 
         document.addEventListener("DOMContentLoaded", async () => {
           await Promise.allSettled([
@@ -629,6 +636,12 @@
         defaultResultFormat = webConfig.resultFormat;
         const resultFormatSelect = document.getElementById("resultFormat");
         resultFormatSelect.value = defaultResultFormat;
+
+        // Populate scrapers select
+        populateSelect("scrapers", webConfig.availableScrapers);
+        defaultScrapers = webConfig.availableScrapers;
+        const scrapersSelect = document.getElementById("scrapers");
+        scrapersSelect.value = defaultScrapers;
 
         // try populate the form from previous settings
         try {
@@ -746,11 +759,13 @@
           const allowEnglishInLanguages = document.getElementById("allowEnglishInLanguages").checked;
           const removeUnknownLanguages = document.getElementById("removeUnknownLanguages").checked;
           const resultFormat = Array.from(document.getElementById("resultFormat").selectedOptions).map(option => option.value);
+          const scrapers = Array.from(document.getElementById("scrapers").selectedOptions).map(option => option.value);
           const debridService = document.getElementById("debridService").value;
           const debridApiKey = document.getElementById("debridApiKey").value;
           const debridStreamProxyPassword = document.getElementById("debridStreamProxyPassword").value;
 
           const selectedResultFormat = resultFormat.length === defaultResultFormat.length && resultFormat.every((val, index) => val === defaultResultFormat[index]) ? ["all"] : resultFormat;
+          const selectedScrapers = scrapers.length === defaultScrapers.length && scrapers.every((val) => defaultScrapers.includes(val)) ? ["all"] : scrapers;
 
           return {
             maxResultsPerResolution: parseInt(maxResultsPerResolution),
@@ -758,6 +773,7 @@
             cachedOnly: cachedOnly,
             removeTrash: removeTrash,
             resultFormat: selectedResultFormat,
+            scrapers: selectedScrapers,
             debridService: debridService,
             debridApiKey: debridApiKey,
             debridStreamProxyPassword: debridStreamProxyPassword,
@@ -832,6 +848,8 @@
             document.getElementById("debridStreamProxyPassword").value = settings.debridStreamProxyPassword;
           if (settings.resultFormat !== null && settings.resultFormat != "all")
             document.getElementById("resultFormat").value = settings.resultFormat;
+          if (settings.scrapers !== null && settings.scrapers != "all" && Array.isArray(settings.scrapers))
+            document.getElementById("scrapers").value = settings.scrapers;
           if (settings.languages) {
             // if (settings.languages.required)
             //     document.getElementById("languages_required").value = settings.languages.required;
