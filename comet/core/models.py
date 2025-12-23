@@ -748,22 +748,7 @@ web_config = {
         "tracker",
         "languages",
     ],
-    "availableScrapers": [
-        "Aiostreams",
-        "Bitmagnet",
-        "Comet",
-        "Debridio",
-        "Jackett",
-        "Jackettio",
-        "MediaFusion",
-        "Nyaa",
-        "Prowlarr",
-        "Stremthru",
-        "Torbox",
-        "Torrentio",
-        "YGGTorrent",
-        "Zilean",
-    ],
+    # availableScrapers is added dynamically in the configure endpoint
 }
 
 

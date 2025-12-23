@@ -124,7 +124,7 @@ class ScraperManager:
             setting_key, scraper_name_clean = self._get_scraper_setting_key(scraper_name)
 
             # Check if scraper is in user's selection (if specified)
-            if request.enabled_scrapers is not None and len(request.enabled_scrapers) > 0:
+            if request.enabled_scrapers:
                 # If user specified scrapers and this one isn't in the list, skip it
                 if scraper_name_clean not in request.enabled_scrapers:
                     continue
