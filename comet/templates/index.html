@@ -764,8 +764,10 @@
           const debridApiKey = document.getElementById("debridApiKey").value;
           const debridStreamProxyPassword = document.getElementById("debridStreamProxyPassword").value;
 
-          const selectedResultFormat = resultFormat.length === defaultResultFormat.length && resultFormat.every((val, index) => val === defaultResultFormat[index]) ? ["all"] : resultFormat;
-          // Check if all scrapers are selected: same length AND every scraper in selection exists in defaults AND every default exists in selection
+          // Check if all items are selected: same length AND bidirectional includes check (order-independent)
+          const selectedResultFormat = resultFormat.length === defaultResultFormat.length && 
+                                        resultFormat.every((val) => defaultResultFormat.includes(val)) && 
+                                        defaultResultFormat.every((val) => resultFormat.includes(val)) ? ["all"] : resultFormat;
           const selectedScrapers = scrapers.length === defaultScrapers.length && 
                                     scrapers.every((val) => defaultScrapers.includes(val)) && 
                                     defaultScrapers.every((val) => scrapers.includes(val)) ? ["all"] : scrapers;
