@@ -66,13 +66,16 @@ class ScraperManager:
         recommended = []
         priority_scrapers = ["Torrentio", "Zilean", "Jackett", "Prowlarr"]
         
+        # Create priority mapping for O(1) lookup during sorting
+        priority_map = {name: i for i, name in enumerate(priority_scrapers)}
+        
         for scraper_name in self.scrapers.keys():
             _, scraper_name_clean = self._get_scraper_setting_key(scraper_name)
             if scraper_name_clean in priority_scrapers:
                 recommended.append(scraper_name_clean)
         
         # Return in priority order if found, otherwise return what we have
-        return sorted(recommended, key=lambda x: priority_scrapers.index(x) if x in priority_scrapers else 999)
+        return sorted(recommended, key=lambda x: priority_map.get(x, 999))
 
     def has_enabled_scrapers(self, context: str = "live") -> bool:
         """

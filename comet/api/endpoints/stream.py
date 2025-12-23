@@ -23,6 +23,14 @@ streams = APIRouter()
 # Maximum number of scraper recommendations to show in error messages
 MAX_SCRAPER_RECOMMENDATIONS = 4
 
+# Helpful notes about scraper setup requirements
+SCRAPER_SETUP_NOTES = {
+    "Torrentio": " (fast, no setup needed)",
+    "Zilean": " (requires Zilean instance)",
+    "Jackett": " (requires Jackett setup)",
+    "Prowlarr": " (requires Prowlarr setup)",
+}
+
 
 async def is_first_search(media_id: str):
     params = {"media_id": media_id, "timestamp": time.time()}
@@ -378,15 +386,8 @@ async def stream(
             scraper_lines = []
             for scraper in recommended_scrapers[:MAX_SCRAPER_RECOMMENDATIONS]:
                 line = f"• SCRAPE_{scraper.upper()}=true"
-                # Add helpful notes for easy-to-setup scrapers
-                if scraper == "Torrentio":
-                    line += " (fast, no setup needed)"
-                elif scraper == "Zilean":
-                    line += " (requires Zilean instance)"
-                elif scraper == "Jackett":
-                    line += " (requires Jackett setup)"
-                elif scraper == "Prowlarr":
-                    line += " (requires Prowlarr setup)"
+                # Add helpful setup note if available
+                line += SCRAPER_SETUP_NOTES.get(scraper, "")
                 scraper_lines.append(line)
             
             scraper_examples = "\n".join(scraper_lines) if scraper_lines else "• SCRAPE_TORRENTIO=true (fast, no setup needed)"
