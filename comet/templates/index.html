@@ -765,7 +765,10 @@
           const debridStreamProxyPassword = document.getElementById("debridStreamProxyPassword").value;
 
           const selectedResultFormat = resultFormat.length === defaultResultFormat.length && resultFormat.every((val, index) => val === defaultResultFormat[index]) ? ["all"] : resultFormat;
-          const selectedScrapers = scrapers.length === defaultScrapers.length && scrapers.every((val) => defaultScrapers.includes(val)) ? ["all"] : scrapers;
+          // Check if all scrapers are selected: same length AND every scraper in selection exists in defaults AND every default exists in selection
+          const selectedScrapers = scrapers.length === defaultScrapers.length && 
+                                    scrapers.every((val) => defaultScrapers.includes(val)) && 
+                                    defaultScrapers.every((val) => scrapers.includes(val)) ? ["all"] : scrapers;
 
           return {
             maxResultsPerResolution: parseInt(maxResultsPerResolution),
@@ -846,9 +849,9 @@
             document.getElementById("debridApiKey").value = settings.debridApiKey;
           if (settings.debridStreamProxyPassword !== null)
             document.getElementById("debridStreamProxyPassword").value = settings.debridStreamProxyPassword;
-          if (settings.resultFormat !== null && settings.resultFormat != "all")
+          if (settings.resultFormat !== null && settings.resultFormat !== "all")
             document.getElementById("resultFormat").value = settings.resultFormat;
-          if (settings.scrapers !== null && settings.scrapers != "all" && Array.isArray(settings.scrapers))
+          if (settings.scrapers !== null && settings.scrapers !== "all" && Array.isArray(settings.scrapers))
             document.getElementById("scrapers").value = settings.scrapers;
           if (settings.languages) {
             // if (settings.languages.required)

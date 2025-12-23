@@ -13,15 +13,9 @@ async def configure(request: Request):
     # Import here to avoid circular dependency
     from comet.scrapers.manager import scraper_manager
     
-    # Get available scrapers dynamically from the scraper manager
-    available_scrapers = sorted([
-        scraper_manager._get_scraper_setting_key(name)[1]
-        for name in scraper_manager.scrapers.keys()
-    ])
-    
     # Create a copy of web_config with dynamically generated scrapers list
     web_config_with_scrapers = web_config.copy()
-    web_config_with_scrapers["availableScrapers"] = available_scrapers
+    web_config_with_scrapers["availableScrapers"] = scraper_manager.get_scraper_names()
     
     return templates.TemplateResponse(
         "index.html",

@@ -56,6 +56,19 @@ class ScraperManager:
         setting_key = f"SCRAPE_{scraper_name_clean.upper()}"
         return setting_key, scraper_name_clean
 
+    def get_scraper_names(self) -> list:
+        """
+        Get a sorted list of all available scraper names.
+        Returns clean scraper names without the "Scraper" suffix.
+        
+        Returns:
+            List of scraper names (e.g., ["Aiostreams", "Bitmagnet", ...])
+        """
+        return sorted([
+            self._get_scraper_setting_key(name)[1]
+            for name in self.scrapers.keys()
+        ])
+
     def get_recommended_scrapers(self) -> list:
         """
         Get a list of recommended scrapers for users to enable.
