@@ -42,6 +42,38 @@ class ScraperManager:
                 ):
                     self.scrapers[obj.__name__] = obj
 
+    def _get_scraper_setting_key(self, scraper_name: str) -> tuple:
+        """
+        Get the setting key and clean name for a scraper.
+        
+        Args:
+            scraper_name: The scraper class name (e.g., "TorrentioScraper")
+            
+        Returns:
+            Tuple of (setting_key, scraper_name_clean)
+        """
+        scraper_name_clean = scraper_name.replace("Scraper", "")
+        setting_name = scraper_name_clean.upper()
+        setting_key = f"SCRAPE_{setting_name}"
+        return setting_key, scraper_name_clean
+
+    def get_recommended_scrapers(self) -> list:
+        """
+        Get a list of recommended scrapers for users to enable.
+        Returns scrapers that are easy to set up or commonly used.
+        """
+        # Prioritize scrapers that work out of the box or are commonly used
+        recommended = []
+        priority_scrapers = ["Torrentio", "Zilean", "Jackett", "Prowlarr"]
+        
+        for scraper_name in self.scrapers.keys():
+            _, scraper_name_clean = self._get_scraper_setting_key(scraper_name)
+            if scraper_name_clean in priority_scrapers:
+                recommended.append(scraper_name_clean)
+        
+        # Return in priority order if found, otherwise return what we have
+        return sorted(recommended, key=lambda x: priority_scrapers.index(x) if x in priority_scrapers else 999)
+
     def has_enabled_scrapers(self, context: str = "live") -> bool:
         """
         Check if any scrapers are enabled for the given context.
@@ -53,9 +85,7 @@ class ScraperManager:
             True if at least one scraper is enabled, False otherwise
         """
         for scraper_name in self.scrapers.keys():
-            scraper_name_clean = scraper_name.replace("Scraper", "")
-            setting_name = scraper_name_clean.upper()
-            setting_key = f"SCRAPE_{setting_name}"
+            setting_key, _ = self._get_scraper_setting_key(scraper_name)
             
             if hasattr(settings, setting_key):
                 if settings.is_scraper_enabled(
@@ -89,9 +119,7 @@ class ScraperManager:
         for scraper_name, scraper_class in self.scrapers.items():
             # Determine if scraper should be enabled
             # Convention: Scraper class name "NyaaScraper" -> settings.SCRAPE_NYAA
-            scraper_name_clean = scraper_name.replace("Scraper", "")
-            setting_name = scraper_name_clean.upper()
-            setting_key = f"SCRAPE_{setting_name}"
+            setting_key, scraper_name_clean = self._get_scraper_setting_key(scraper_name)
 
             if hasattr(settings, setting_key):
                 if not settings.is_scraper_enabled(
@@ -140,6 +168,7 @@ class ScraperManager:
                         )
 
             else:
+                setting_name = scraper_name_clean.upper()
                 url_setting_key = f"{setting_name}_URL"
                 if scraper_name == "StremthruScraper":
                     url_setting_key = "STREMTHRU_SCRAPE_URL"

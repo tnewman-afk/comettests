@@ -367,6 +367,27 @@ async def stream(
                 "SCRAPER",
                 f"❌ No torrents found for {log_title} and no scrapers are enabled. Please configure scrapers."
             )
+            
+            # Get recommended scrapers dynamically
+            recommended_scrapers = scraper_manager.get_recommended_scrapers()
+            
+            # Build scraper examples with helpful notes
+            scraper_lines = []
+            for scraper in recommended_scrapers[:4]:  # Show top 4 recommendations
+                line = f"• SCRAPE_{scraper.upper()}=true"
+                # Add helpful notes for easy-to-setup scrapers
+                if scraper == "Torrentio":
+                    line += " (fast, no setup needed)"
+                elif scraper == "Zilean":
+                    line += " (requires Zilean instance)"
+                elif scraper == "Jackett":
+                    line += " (requires Jackett setup)"
+                elif scraper == "Prowlarr":
+                    line += " (requires Prowlarr setup)"
+                scraper_lines.append(line)
+            
+            scraper_examples = "\n".join(scraper_lines) if scraper_lines else "• SCRAPE_TORRENTIO=true (fast, no setup needed)"
+            
             return {
                 "streams": [
                     {
@@ -374,10 +395,7 @@ async def stream(
                         "description": (
                             "No scrapers are enabled in your Comet configuration.\n\n"
                             "To get results, please enable at least one scraper in your .env file:\n"
-                            "• SCRAPE_TORRENTIO=true (fast, no setup needed)\n"
-                            "• SCRAPE_ZILEAN=true (requires Zilean instance)\n"
-                            "• SCRAPE_JACKETT=true (requires Jackett setup)\n"
-                            "• SCRAPE_PROWLARR=true (requires Prowlarr setup)\n\n"
+                            f"{scraper_examples}\n\n"
                             f"Your debrid service ({debrid_service}) is configured correctly, "
                             "but Comet needs scrapers to find torrents before checking availability."
                         ),
