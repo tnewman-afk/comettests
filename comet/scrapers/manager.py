@@ -42,6 +42,29 @@ class ScraperManager:
                 ):
                     self.scrapers[obj.__name__] = obj
 
+    def has_enabled_scrapers(self, context: str = "live") -> bool:
+        """
+        Check if any scrapers are enabled for the given context.
+        
+        Args:
+            context: The context to check ("live" or "background")
+            
+        Returns:
+            True if at least one scraper is enabled, False otherwise
+        """
+        for scraper_name in self.scrapers.keys():
+            scraper_name_clean = scraper_name.replace("Scraper", "")
+            setting_name = scraper_name_clean.upper()
+            setting_key = f"SCRAPE_{setting_name}"
+            
+            if hasattr(settings, setting_key):
+                if settings.is_scraper_enabled(
+                    getattr(settings, setting_key), context
+                ):
+                    return True
+        
+        return False
+
     async def _scrape_wrapper(
         self, name: str, scraper: BaseScraper, request: ScrapeRequest
     ):
@@ -53,6 +76,16 @@ class ScraperManager:
 
     async def scrape_all(self, request: ScrapeRequest, session: aiohttp.ClientSession):
         tasks = []
+        
+        # Check if any scrapers are enabled
+        if not self.has_enabled_scrapers(request.context):
+            logger.warning(
+                f"No scrapers are enabled for context '{request.context}'. "
+                "Please configure at least one scraper in your .env file "
+                "(e.g., SCRAPE_TORRENTIO=true, SCRAPE_ZILEAN=true, etc.) "
+                "to fetch torrents. Without scrapers, no results can be found."
+            )
+        
         for scraper_name, scraper_class in self.scrapers.items():
             # Determine if scraper should be enabled
             # Convention: Scraper class name "NyaaScraper" -> settings.SCRAPE_NYAA

@@ -10,6 +10,7 @@ from comet.core.logger import logger
 from comet.core.models import database, settings, trackers
 from comet.debrid.manager import get_debrid_extension
 from comet.metadata.manager import MetadataScraper
+from comet.scrapers.manager import scraper_manager
 from comet.services.debrid import DebridService
 from comet.services.lock import DistributedLock, is_scrape_in_progress
 from comet.services.orchestration import TorrentManager
@@ -359,6 +360,31 @@ async def stream(
             # Release lock if we had it but didn't need to scrape
             await scrape_lock.release()
             lock_acquired = False
+
+        # Check if no torrents were found and no scrapers are enabled
+        if len(torrent_manager.torrents) == 0 and not scraper_manager.has_enabled_scrapers("live"):
+            logger.log(
+                "SCRAPER",
+                f"❌ No torrents found for {log_title} and no scrapers are enabled. Please configure scrapers."
+            )
+            return {
+                "streams": [
+                    {
+                        "name": "[⚠️] Comet - No Scrapers Configured",
+                        "description": (
+                            "No scrapers are enabled in your Comet configuration.\n\n"
+                            "To get results, please enable at least one scraper in your .env file:\n"
+                            "• SCRAPE_TORRENTIO=true (fast, no setup needed)\n"
+                            "• SCRAPE_ZILEAN=true (requires Zilean instance)\n"
+                            "• SCRAPE_JACKETT=true (requires Jackett setup)\n"
+                            "• SCRAPE_PROWLARR=true (requires Prowlarr setup)\n\n"
+                            f"Your debrid service ({debrid_service}) is configured correctly, "
+                            "but Comet needs scrapers to find torrents before checking availability."
+                        ),
+                        "url": "https://comet.fast",
+                    }
+                ]
+            }
 
         await debrid_service_instance.check_existing_availability(
             torrent_manager.torrents, season, episode
