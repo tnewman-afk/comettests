@@ -401,7 +401,8 @@ async def stream(
                         "name": "[⚠️] Comet - No Scrapers Configured",
                         "description": (
                             "No scrapers are enabled in your Comet configuration.\n\n"
-                            "To get results, please enable at least one scraper in your .env file:\n"
+                            "Option 1: Select scrapers in the web setup when configuring your addon.\n"
+                            "Option 2: Enable scrapers in your .env file:\n"
                             f"{scraper_examples}\n\n"
                             f"Your debrid service ({debrid_service}) is configured correctly, "
                             "but Comet needs scrapers to find torrents before checking availability."

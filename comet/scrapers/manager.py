@@ -100,13 +100,13 @@ class ScraperManager:
         Returns:
             True if at least one scraper is enabled, False otherwise
         """
+        # If user explicitly selected scrapers in web UI, those are enabled
+        if enabled_scrapers:
+            return len(enabled_scrapers) > 0
+        
+        # Otherwise, check .env settings
         for scraper_name in self.scrapers.keys():
             setting_key, scraper_name_clean = self._get_scraper_setting_key(scraper_name)
-            
-            # If user specified scrapers in web UI, check if this scraper is in the list
-            if enabled_scrapers:
-                if scraper_name_clean not in enabled_scrapers:
-                    continue
             
             if hasattr(settings, setting_key):
                 if settings.is_scraper_enabled(
@@ -132,7 +132,7 @@ class ScraperManager:
         if not self.has_enabled_scrapers(request.context, request.enabled_scrapers):
             logger.warning(
                 f"No scrapers are enabled for context '{request.context}'. "
-                "Please configure at least one scraper in your .env file "
+                "Please select scrapers in the web setup UI or configure at least one scraper in your .env file "
                 "(e.g., SCRAPE_TORRENTIO=true, SCRAPE_ZILEAN=true, etc.) "
                 "to fetch torrents. Without scrapers, no results can be found."
             )
@@ -147,17 +147,19 @@ class ScraperManager:
                 # If user specified scrapers and this one isn't in the list, skip it
                 if scraper_name_clean not in request.enabled_scrapers:
                     continue
-
-            if hasattr(settings, setting_key):
-                if not settings.is_scraper_enabled(
-                    getattr(settings, setting_key), request.context
-                ):
-                    continue
+                # User selected this scraper in web UI, it's enabled regardless of .env
             else:
-                logger.debug(
-                    f"No {setting_key} found for {scraper_name_clean}, disabling"
-                )
-                continue
+                # No web UI selection, check .env settings
+                if hasattr(settings, setting_key):
+                    if not settings.is_scraper_enabled(
+                        getattr(settings, setting_key), request.context
+                    ):
+                        continue
+                else:
+                    logger.debug(
+                        f"No {setting_key} found for {scraper_name_clean}, disabling"
+                    )
+                    continue
 
             if (
                 scraper_name == "NyaaScraper"
