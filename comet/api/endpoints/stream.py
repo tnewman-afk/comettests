@@ -20,6 +20,9 @@ from comet.utils.parsing import parse_media_id
 
 streams = APIRouter()
 
+# Maximum number of scraper recommendations to show in error messages
+MAX_SCRAPER_RECOMMENDATIONS = 4
+
 
 async def is_first_search(media_id: str):
     params = {"media_id": media_id, "timestamp": time.time()}
@@ -373,7 +376,7 @@ async def stream(
             
             # Build scraper examples with helpful notes
             scraper_lines = []
-            for scraper in recommended_scrapers[:4]:  # Show top 4 recommendations
+            for scraper in recommended_scrapers[:MAX_SCRAPER_RECOMMENDATIONS]:
                 line = f"• SCRAPE_{scraper.upper()}=true"
                 # Add helpful notes for easy-to-setup scrapers
                 if scraper == "Torrentio":

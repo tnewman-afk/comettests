@@ -168,8 +168,7 @@ class ScraperManager:
                         )
 
             else:
-                setting_name = scraper_name_clean.upper()
-                url_setting_key = f"{setting_name}_URL"
+                url_setting_key = f"{scraper_name_clean.upper()}_URL"
                 if scraper_name == "StremthruScraper":
                     url_setting_key = "STREMTHRU_SCRAPE_URL"
 
