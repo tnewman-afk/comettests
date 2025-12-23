@@ -374,7 +374,8 @@ async def stream(
             lock_acquired = False
 
         # Check if no torrents were found and no scrapers are enabled
-        if len(torrent_manager.torrents) == 0 and not scraper_manager.has_enabled_scrapers("live"):
+        enabled_scrapers = config.get("scrapers") if config.get("scrapers") and config.get("scrapers") != ["all"] else None
+        if len(torrent_manager.torrents) == 0 and not scraper_manager.has_enabled_scrapers("live", enabled_scrapers):
             logger.log(
                 "SCRAPER",
                 f"❌ No torrents found for {log_title} and no scrapers are enabled. Please configure scrapers."

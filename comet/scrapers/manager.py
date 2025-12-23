@@ -89,18 +89,24 @@ class ScraperManager:
         # Return in priority order if found, otherwise return what we have
         return sorted(recommended, key=lambda x: priority_map.get(x, 999))
 
-    def has_enabled_scrapers(self, context: str = "live") -> bool:
+    def has_enabled_scrapers(self, context: str = "live", enabled_scrapers: list = None) -> bool:
         """
         Check if any scrapers are enabled for the given context.
         
         Args:
             context: The context to check ("live" or "background")
+            enabled_scrapers: Optional list of user-selected scrapers from web UI
             
         Returns:
             True if at least one scraper is enabled, False otherwise
         """
         for scraper_name in self.scrapers.keys():
-            setting_key, _ = self._get_scraper_setting_key(scraper_name)
+            setting_key, scraper_name_clean = self._get_scraper_setting_key(scraper_name)
+            
+            # If user specified scrapers in web UI, check if this scraper is in the list
+            if enabled_scrapers:
+                if scraper_name_clean not in enabled_scrapers:
+                    continue
             
             if hasattr(settings, setting_key):
                 if settings.is_scraper_enabled(
@@ -122,8 +128,8 @@ class ScraperManager:
     async def scrape_all(self, request: ScrapeRequest, session: aiohttp.ClientSession):
         tasks = []
         
-        # Check if any scrapers are enabled
-        if not self.has_enabled_scrapers(request.context):
+        # Check if any scrapers are enabled (considering both .env and user selection)
+        if not self.has_enabled_scrapers(request.context, request.enabled_scrapers):
             logger.warning(
                 f"No scrapers are enabled for context '{request.context}'. "
                 "Please configure at least one scraper in your .env file "
