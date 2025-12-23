@@ -56,6 +56,19 @@ class ScraperManager:
         setting_key = f"SCRAPE_{scraper_name_clean.upper()}"
         return setting_key, scraper_name_clean
 
+    def get_scraper_names(self) -> list:
+        """
+        Get a sorted list of all available scraper names.
+        Returns clean scraper names without the "Scraper" suffix.
+        
+        Returns:
+            List of scraper names (e.g., ["Aiostreams", "Bitmagnet", ...])
+        """
+        return sorted([
+            self._get_scraper_setting_key(name)[1]
+            for name in self.scrapers.keys()
+        ])
+
     def get_recommended_scrapers(self) -> list:
         """
         Get a list of recommended scrapers for users to enable.
@@ -122,6 +135,12 @@ class ScraperManager:
             # Determine if scraper should be enabled
             # Convention: Scraper class name "NyaaScraper" -> settings.SCRAPE_NYAA
             setting_key, scraper_name_clean = self._get_scraper_setting_key(scraper_name)
+
+            # Check if scraper is in user's selection (if specified)
+            if request.enabled_scrapers:
+                # If user specified scrapers and this one isn't in the list, skip it
+                if scraper_name_clean not in request.enabled_scrapers:
+                    continue
 
             if hasattr(settings, setting_key):
                 if not settings.is_scraper_enabled(

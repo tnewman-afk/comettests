@@ -13,6 +13,7 @@ class ScrapeRequest(BaseModel):
     season: Optional[int] = None
     episode: Optional[int] = None
     context: str = "live"  # "live" or "background"
+    enabled_scrapers: Optional[List[str]] = None  # User-selected scrapers, None means all
 
 
 class ScrapeResult(TypedDict):

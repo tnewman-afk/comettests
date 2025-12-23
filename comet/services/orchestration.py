@@ -30,6 +30,7 @@ class TorrentManager:
         aliases: dict,
         remove_adult_content: bool,
         context: str = "live",  # "live" or "background"
+        enabled_scrapers: list = None,  # User-selected scrapers
     ):
         self.debrid_service = debrid_service
         self.debrid_api_key = debrid_api_key
@@ -45,6 +46,7 @@ class TorrentManager:
         self.aliases = aliases
         self.remove_adult_content = remove_adult_content
         self.context = context
+        self.enabled_scrapers = enabled_scrapers
 
         self.seen_hashes = set()
         self.torrents = {}
@@ -67,6 +69,7 @@ class TorrentManager:
             season=self.season,
             episode=self.episode,
             context=self.context,
+            enabled_scrapers=self.enabled_scrapers,
         )
 
         async for scraper_name, results in scraper_manager.scrape_all(request, session):

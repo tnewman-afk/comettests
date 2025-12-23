@@ -286,6 +286,7 @@ async def stream(
             episode,
             aliases,
             settings.REMOVE_ADULT_CONTENT and config["removeTrash"],
+            enabled_scrapers=config.get("scrapers") if config.get("scrapers") and config.get("scrapers") != ["all"] else None,
         )
 
         await torrent_manager.get_cached_torrents()
