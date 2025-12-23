@@ -102,7 +102,7 @@ class ScraperManager:
         """
         # If user explicitly selected scrapers in web UI, those are enabled
         if enabled_scrapers:
-            return len(enabled_scrapers) > 0
+            return bool(enabled_scrapers)
         
         # Otherwise, check .env settings
         for scraper_name in self.scrapers.keys():
@@ -144,10 +144,10 @@ class ScraperManager:
 
             # Check if scraper is in user's selection (if specified)
             if request.enabled_scrapers:
-                # If user specified scrapers and this one isn't in the list, skip it
+                # User selected scrapers via web UI - only use those in the list
                 if scraper_name_clean not in request.enabled_scrapers:
                     continue
-                # User selected this scraper in web UI, it's enabled regardless of .env
+                # This scraper is in user's selection, enable it (skip .env check)
             else:
                 # No web UI selection, check .env settings
                 if hasattr(settings, setting_key):
