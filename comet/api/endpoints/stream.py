@@ -145,7 +145,7 @@ async def stream(
         return {
             "streams": [
                 {
-                    "name": "[❌] Comet",
+                    "name": "[❌] Comet Enhanced",
                     "description": f"⚠️ OBSOLETE CONFIGURATION, PLEASE RE-CONFIGURE ON {request.url.scheme}://{request.url.netloc} ⚠️",
                     "url": "https://comet.fast",
                 }
@@ -242,7 +242,7 @@ async def stream(
             return {
                 "streams": [
                     {
-                        "name": "[⚠️] Comet",
+                        "name": "[⚠️] Comet Enhanced",
                         "description": "Unable to get metadata.",
                         "url": "https://comet.fast",
                     }
@@ -265,6 +265,10 @@ async def stream(
         media_only_id = id
 
         debrid_service = config["debridService"]
+        
+        # Extract enabled scrapers from config (if user selected specific ones)
+        scrapers_config = config.get("scrapers")
+        enabled_scrapers = scrapers_config if scrapers_config and scrapers_config != ["all"] else None
 
         debrid_service_instance = DebridService(
             config["debridService"],
@@ -286,7 +290,7 @@ async def stream(
             episode,
             aliases,
             settings.REMOVE_ADULT_CONTENT and config["removeTrash"],
-            enabled_scrapers=config.get("scrapers") if config.get("scrapers") and config.get("scrapers") != ["all"] else None,
+            enabled_scrapers=enabled_scrapers,
         )
 
         await torrent_manager.get_cached_torrents()
@@ -332,7 +336,7 @@ async def stream(
                     return {
                         "streams": [
                             {
-                                "name": "[🔄] Comet",
+                                "name": "[🔄] Comet Enhanced",
                                 "description": "Scraping in progress by another instance, please try again in a few seconds...",
                                 "url": "https://comet.fast",
                             }
@@ -351,7 +355,7 @@ async def stream(
 
             cached_results.append(
                 {
-                    "name": "[🔄] Comet",
+                    "name": "[🔄] Comet Enhanced",
                     "description": "First search for this media - More results will be available in a few seconds...",
                     "url": "https://comet.fast",
                 }
@@ -374,7 +378,7 @@ async def stream(
             lock_acquired = False
 
         # Check if no torrents were found and no scrapers are enabled
-        if len(torrent_manager.torrents) == 0 and not scraper_manager.has_enabled_scrapers("live"):
+        if len(torrent_manager.torrents) == 0 and not scraper_manager.has_enabled_scrapers("live", enabled_scrapers):
             logger.log(
                 "SCRAPER",
                 f"❌ No torrents found for {log_title} and no scrapers are enabled. Please configure scrapers."
@@ -396,13 +400,14 @@ async def stream(
             return {
                 "streams": [
                     {
-                        "name": "[⚠️] Comet - No Scrapers Configured",
+                        "name": "[⚠️] Comet Enhanced - No Scrapers Configured",
                         "description": (
-                            "No scrapers are enabled in your Comet configuration.\n\n"
-                            "To get results, please enable at least one scraper in your .env file:\n"
+                            "No scrapers are enabled in your Comet Enhanced configuration.\n\n"
+                            "Option 1: Select scrapers in the web setup when configuring your addon.\n"
+                            "Option 2: Enable scrapers in your .env file:\n"
                             f"{scraper_examples}\n\n"
                             f"Your debrid service ({debrid_service}) is configured correctly, "
-                            "but Comet needs scrapers to find torrents before checking availability."
+                            "but Comet Enhanced needs scrapers to find torrents before checking availability."
                         ),
                         "url": "https://comet.fast",
                     }
@@ -471,7 +476,7 @@ async def stream(
         ):
             cached_results.append(
                 {
-                    "name": "[⚠️] Comet",
+                    "name": "[⚠️] Comet Enhanced",
                     "description": "Debrid Stream Proxy Password incorrect.\nStreams will not be proxied.",
                     "url": "https://comet.fast",
                 }
@@ -493,7 +498,7 @@ async def stream(
 
             torrent_title = torrent["title"]
             the_stream = {
-                "name": f"[{debrid_extension}{debrid_emoji}] Comet {rtn_data.resolution}",
+                "name": f"[{debrid_extension}{debrid_emoji}] Comet Enhanced {rtn_data.resolution}",
                 "description": format_title(
                     rtn_data,
                     torrent_title,
