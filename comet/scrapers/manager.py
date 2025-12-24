@@ -14,10 +14,10 @@ from comet.scrapers.models import ScrapeRequest
 from comet.services.anime import anime_mapper
 from comet.utils.parsing import associate_urls_credentials
 
-
 class ScraperManager:
     def __init__(self):
         self.scrapers: Dict[str, BaseScraper] = {}
+        self.scraper_requires_url: Dict[str, bool] = {}
         self.discover_scrapers()
 
     def discover_scrapers(self):
@@ -41,6 +41,11 @@ class ScraperManager:
                     and obj is not BaseScraper
                 ):
                     self.scrapers[obj.__name__] = obj
+                    url_param = inspect.signature(obj.__init__).parameters.get("url")
+                    self.scraper_requires_url[obj.__name__] = (
+                        url_param is not None
+                        and url_param.default is inspect.Parameter.empty
+                    )
 
     def _get_scraper_setting_key(self, scraper_name: str) -> tuple:
         """
@@ -207,10 +212,7 @@ class ScraperManager:
                     if isinstance(urls, str):
                         urls = [urls]
 
-                    url_param = inspect.signature(
-                        scraper_class.__init__
-                    ).parameters.get("url")
-                    requires_url = url_param is not None and url_param.default is inspect._empty
+                    requires_url = self.scraper_requires_url.get(scraper_name, False)
 
                     if not urls and requires_url:
                         logger.warning(
