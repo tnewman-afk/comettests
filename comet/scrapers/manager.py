@@ -142,82 +142,99 @@ class ScraperManager:
             # Convention: Scraper class name "NyaaScraper" -> settings.SCRAPE_NYAA
             setting_key, scraper_name_clean = self._get_scraper_setting_key(scraper_name)
 
-            # Check if scraper is in user's selection (if specified)
-            if request.enabled_scrapers is not None:
-                # User selected scrapers via web UI - only use those in the list
-                if scraper_name_clean not in request.enabled_scrapers:
-                    continue
-                # This scraper is in user's selection, enable it (skip .env check)
-            else:
-                # No web UI selection, check .env settings
-                if hasattr(settings, setting_key):
-                    if not settings.is_scraper_enabled(
-                        getattr(settings, setting_key), request.context
-                    ):
+            try:
+                # Check if scraper is in user's selection (if specified)
+                if request.enabled_scrapers is not None:
+                    # User selected scrapers via web UI - only use those in the list
+                    if scraper_name_clean not in request.enabled_scrapers:
                         continue
+                    # This scraper is in user's selection, enable it (skip .env check)
                 else:
-                    logger.debug(
-                        f"No {setting_key} found for {scraper_name_clean}, disabling"
+                    # No web UI selection, check .env settings
+                    if hasattr(settings, setting_key):
+                        if not settings.is_scraper_enabled(
+                            getattr(settings, setting_key), request.context
+                        ):
+                            continue
+                    else:
+                        logger.debug(
+                            f"No {setting_key} found for {scraper_name_clean}, disabling"
+                        )
+                        continue
+
+                if (
+                    scraper_name == "NyaaScraper"
+                    and settings.NYAA_ANIME_ONLY
+                    and not anime_mapper.is_anime_content(
+                        request.media_id, request.media_only_id
                     )
+                ):
                     continue
 
-            if (
-                scraper_name == "NyaaScraper"
-                and settings.NYAA_ANIME_ONLY
-                and not anime_mapper.is_anime_content(
-                    request.media_id, request.media_only_id
-                )
-            ):
-                continue
-
-            if scraper_name == "MediaFusionScraper":
-                url_credentials_pairs = associate_urls_credentials(
-                    settings.MEDIAFUSION_URL, settings.MEDIAFUSION_API_PASSWORD
-                )
-                if url_credentials_pairs:
-                    for i, (url, password) in enumerate(url_credentials_pairs):
-                        scraper = scraper_class(self, session, url, password)
-                        tasks.append(
-                            self._scrape_wrapper(
-                                f"{scraper_name_clean} #{i + 1}", scraper, request
-                            )
-                        )
-
-            elif scraper_name == "AiostreamsScraper":
-                url_credentials_pairs = associate_urls_credentials(
-                    settings.AIOSTREAMS_URL, settings.AIOSTREAMS_USER_UUID_AND_PASSWORD
-                )
-                if url_credentials_pairs:
-                    for i, (url, credentials) in enumerate(url_credentials_pairs):
-                        scraper = scraper_class(self, session, url, credentials)
-                        tasks.append(
-                            self._scrape_wrapper(
-                                f"{scraper_name_clean} #{i + 1}", scraper, request
-                            )
-                        )
-
-            else:
-                url_setting_key = f"{scraper_name_clean.upper()}_URL"
-                if scraper_name == "StremthruScraper":
-                    url_setting_key = "STREMTHRU_SCRAPE_URL"
-
-                urls = getattr(settings, url_setting_key, None)
-                if isinstance(urls, str):
-                    urls = [urls]
-
-                if urls:
-                    for i, url in enumerate(urls):
-                        scraper = scraper_class(self, session, url)
-                        tasks.append(
-                            self._scrape_wrapper(
-                                f"{scraper_name_clean} #{i + 1}", scraper, request
-                            )
-                        )
-                else:
-                    scraper = scraper_class(self, session)
-                    tasks.append(
-                        self._scrape_wrapper(scraper_name_clean, scraper, request)
+                if scraper_name == "MediaFusionScraper":
+                    url_credentials_pairs = associate_urls_credentials(
+                        settings.MEDIAFUSION_URL, settings.MEDIAFUSION_API_PASSWORD
                     )
+                    if url_credentials_pairs:
+                        for i, (url, password) in enumerate(url_credentials_pairs):
+                            scraper = scraper_class(self, session, url, password)
+                            tasks.append(
+                                self._scrape_wrapper(
+                                    f"{scraper_name_clean} #{i + 1}", scraper, request
+                                )
+                            )
+
+                elif scraper_name == "AiostreamsScraper":
+                    url_credentials_pairs = associate_urls_credentials(
+                        settings.AIOSTREAMS_URL,
+                        settings.AIOSTREAMS_USER_UUID_AND_PASSWORD,
+                    )
+                    if url_credentials_pairs:
+                        for i, (url, credentials) in enumerate(url_credentials_pairs):
+                            scraper = scraper_class(self, session, url, credentials)
+                            tasks.append(
+                                self._scrape_wrapper(
+                                    f"{scraper_name_clean} #{i + 1}", scraper, request
+                                )
+                            )
+
+                else:
+                    url_setting_key = f"{scraper_name_clean.upper()}_URL"
+                    if scraper_name == "StremthruScraper":
+                        url_setting_key = "STREMTHRU_SCRAPE_URL"
+
+                    urls = getattr(settings, url_setting_key, None)
+                    if isinstance(urls, str):
+                        urls = [urls]
+
+                    url_param = inspect.signature(
+                        scraper_class.__init__
+                    ).parameters.get("url")
+                    requires_url = url_param is not None and url_param.default is inspect._empty
+
+                    if not urls and requires_url:
+                        logger.warning(
+                            f"Missing {url_setting_key} for {scraper_name_clean}, skipping scraper"
+                        )
+                        continue
+
+                    if urls:
+                        for i, url in enumerate(urls):
+                            scraper = scraper_class(self, session, url)
+                            tasks.append(
+                                self._scrape_wrapper(
+                                    f"{scraper_name_clean} #{i + 1}", scraper, request
+                                )
+                            )
+                    else:
+                        scraper = scraper_class(self, session)
+                        tasks.append(
+                            self._scrape_wrapper(scraper_name_clean, scraper, request)
+                        )
+            except Exception as e:
+                logger.warning(
+                    f"Skipping {scraper_name_clean} due to initialization error: {e}"
+                )
 
         for future in asyncio.as_completed(tasks):
             try:
