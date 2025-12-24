@@ -1,14 +1,15 @@
 services:
-  comet:
-    container_name: comet
-    image: g0ldyy/comet
+  javastream:
+    container_name: javastream
+    image: javastream
+    build: ..
     restart: unless-stopped
     ports:
       - "8000:8000"
     env_file:
       - .env
     volumes:
-      - ./data/comet:/app/data
+      - ./data/javastream:/app/data
     healthcheck:
       test: wget -qO- http://127.0.0.1:8000/health
       interval: 30s

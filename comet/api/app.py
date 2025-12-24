@@ -109,8 +109,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Comet",
-    summary="Stremio's fastest torrent/debrid search add-on.",
+    title="JavaStream",
+    summary="JavaStream is a fast torrent/debrid search add-on for Stremio.",
     lifespan=lifespan,
     redoc_url=None,
 )

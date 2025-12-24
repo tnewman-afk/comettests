@@ -4,20 +4,53 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-  <meta content="Comet Enhanced" property="og:title" />
-  <meta content="Stremio's fastest torrent/debrid search add-on with enhanced web configuration." property="og:description" />
-  <meta content="https://comet.fast" property="og:url" />
+  <meta content="JavaStream" property="og:title" />
+  <meta content="Zero-setup, Linux-first Stremio torrent/debrid add-on." property="og:description" />
+  <meta content="https://javastream.app" property="og:url" />
   <meta content="https://i.imgur.com/jmVoVMu.jpeg" property="og:image" />
-  <meta content="#6b6ef8" data-react-helmet="true" name="theme-color" />
+  <meta content="#1fd7a2" data-react-helmet="true" name="theme-color" />
 
-  <title>Comet Enhanced - Stremio's fastest torrent/debrid search add-on with enhanced features.</title>
+  <title>JavaStream — Zero-setup Stremio torrent/debrid add-on</title>
   <link id="favicon" rel="icon" type="image/x-icon" href="https://i.imgur.com/jmVoVMu.jpeg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;600;700&display=swap"
+    rel="stylesheet" />
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/themes/dark.css" />
   <script type="module"
     src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/shoelace-autoloader.js"></script>
 
   <style>
+    :root {
+      color-scheme: dark;
+      --js-bg: #0c1112;
+      --js-bg-soft: #131b1d;
+      --js-panel: rgba(19, 27, 29, 0.86);
+      --js-panel-strong: #12191b;
+      --js-text: #f4f6f4;
+      --js-muted: #a7b2b0;
+      --js-accent: #1fd7a2;
+      --js-accent-strong: #12b988;
+      --js-warm: #ffb454;
+      --js-border: rgba(255, 255, 255, 0.08);
+      --js-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+      --sl-color-primary-600: var(--js-accent);
+      --sl-color-primary-700: var(--js-accent-strong);
+      --sl-color-neutral-0: #0b1112;
+      --sl-color-neutral-1000: #eef3f1;
+      --sl-border-radius-medium: 12px;
+      --sl-input-background-color: rgba(11, 17, 18, 0.7);
+      --sl-input-border-color: rgba(255, 255, 255, 0.12);
+      --sl-input-border-color-hover: rgba(255, 255, 255, 0.2);
+      --sl-input-border-color-focus: rgba(31, 215, 162, 0.6);
+      --sl-input-color: var(--js-text);
+      --sl-input-label-color: var(--js-muted);
+      --sl-z-index-dropdown: 10000;
+    }
+
     :not(:defined) {
       visibility: hidden;
     }
@@ -25,170 +58,184 @@
     body {
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
       min-height: 100vh;
       margin: 0;
-      background: radial-gradient(ellipse at bottom,
-          #25292c 0%,
-          #0c0d13 100%);
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto,
-        "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif,
-        "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
-        "Noto Color Emoji";
+      padding: 40px 16px 80px;
+      background:
+        radial-gradient(900px at 8% -10%, rgba(31, 215, 162, 0.28), transparent 60%),
+        radial-gradient(700px at 92% 8%, rgba(255, 180, 84, 0.22), transparent 60%),
+        linear-gradient(180deg, #0c1112 0%, #0f181a 58%, #0a0f10 100%);
+      font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
       font-size: 1rem;
       font-weight: 400;
+      color: var(--js-text);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.04), transparent 35%),
+        repeating-linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.04) 0,
+          rgba(255, 255, 255, 0.04) 1px,
+          transparent 1px,
+          transparent 80px
+        );
+      opacity: 0.4;
+      pointer-events: none;
+      z-index: -2;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      width: 480px;
+      height: 480px;
+      right: -120px;
+      bottom: -160px;
+      background: radial-gradient(circle, rgba(31, 215, 162, 0.3), transparent 70%);
+      filter: blur(10px);
+      opacity: 0.8;
+      z-index: -3;
     }
 
     ::-webkit-scrollbar {
-      overflow: hidden;
+      width: 0;
+      height: 0;
     }
 
     .header {
-      text-align: center;
-      width: 40%;
-      margin-bottom: 20px;
-      margin-top: 50px;
+      text-align: left;
+      width: min(980px, 94vw);
+      margin: 20px auto 24px;
+      padding: 26px 28px;
+      border-radius: 18px;
+      border: 1px solid var(--js-border);
+      background: var(--js-panel);
+      box-shadow: var(--js-shadow);
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
     .comet-text {
-      font-size: calc(1.375rem + 1.5vw);
-      font-weight: 500;
+      font-family: "Space Grotesk", "IBM Plex Sans", sans-serif;
+      font-size: clamp(1.8rem, 2.4vw, 2.6rem);
+      font-weight: 700;
       margin-bottom: 0;
+      letter-spacing: -0.02em;
     }
 
     .emoji {
       width: 1em;
       height: 1em;
       vertical-align: middle;
+      filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3));
+    }
+
+    .header p {
+      margin: 0;
+      color: var(--js-text);
+    }
+
+    .header .subtitle {
+      color: var(--js-muted);
+      font-size: 1rem;
+      max-width: 740px;
     }
 
     .form-container {
-      background-color: #1a1d20;
+      background: var(--js-panel);
       padding: 2rem;
-      border-radius: 0.375rem;
-      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-      width: 80vw;
-      max-width: 950px;
+      border-radius: 20px;
+      border: 1px solid var(--js-border);
+      box-shadow: var(--js-shadow);
+      width: min(1100px, 92vw);
       margin-bottom: 50px;
+      backdrop-filter: blur(18px);
+      position: relative;
+      z-index: 1;
+      overflow: visible;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      overflow: visible;
+      position: relative;
+      z-index: 2;
+    }
+
+    .form-grid > sl-details {
+      grid-column: 1 / -1;
     }
 
     .form-item {
-      margin-bottom: 0.75rem;
+      margin-bottom: 0;
     }
 
-    sl-details {
-      margin-bottom: 0.75rem;
+    .form-item label {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--js-text);
+    }
+
+    sl-details::part(base) {
+      background: rgba(12, 18, 19, 0.8);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: visible;
+    }
+
+    sl-details::part(header) {
+      font-family: "Space Grotesk", "IBM Plex Sans", sans-serif;
+      font-weight: 600;
+    }
+
+    sl-details::part(content) {
+      overflow: visible;
     }
 
     .centered-item {
       display: flex;
       justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+      position: relative;
+      z-index: 1;
+    }
+
+    sl-details {
+      position: relative;
+      z-index: 1;
+      overflow: visible;
+    }
+
+    sl-select {
+      position: relative;
+      z-index: 3;
+    }
+
+    sl-select[open] {
+      z-index: 20000;
+    }
+
+    sl-select::part(popup),
+    sl-select::part(listbox) {
+      z-index: 10000;
     }
 
     .margin-left-install {
-      margin-right: 10px;
-    }
-
-    .stars {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 120%;
-      transform: rotate(-45deg);
-      z-index: -1;
-    }
-
-    .star {
-      --star-color: var(--primary-color);
-      --star-tail-length: 6em;
-      --star-tail-height: 2px;
-      --star-width: calc(var(--star-tail-length) / 6);
-      --fall-duration: 9s;
-      --tail-fade-duration: var(--fall-duration);
-      position: absolute;
-      top: var(--top-offset);
-      left: 0;
-      width: var(--star-tail-length);
-      height: var(--star-tail-height);
-      color: var(--star-color);
-      background: linear-gradient(45deg, currentColor, transparent);
-      border-radius: 50%;
-      filter: drop-shadow(0 0 6px currentColor);
-      transform: translate3d(104em, 0, 0);
-      animation: fall var(--fall-duration) var(--fall-delay) linear infinite,
-        tail-fade var(--tail-fade-duration) var(--fall-delay) ease-out infinite;
-    }
-
-    @media screen and (max-width: 750px) {
-      .star {
-        animation: fall var(--fall-duration) var(--fall-delay) linear infinite;
-      }
-    }
-
-    .star::before,
-    .star::after {
-      position: absolute;
-      content: "";
-      top: 0;
-      left: calc(var(--star-width) / -2);
-      width: var(--star-width);
-      height: 100%;
-      background: linear-gradient(45deg,
-          transparent,
-          currentColor,
-          transparent);
-      border-radius: inherit;
-      animation: blink 2s linear infinite;
-    }
-
-    .star::before {
-      transform: rotate(45deg);
-    }
-
-    .star::after {
-      transform: rotate(-45deg);
-    }
-
-    @keyframes fall {
-      to {
-        transform: translate3d(-30em, 0, 0);
-      }
-    }
-
-    @keyframes tail-fade {
-
-      0%,
-      50% {
-        width: var(--star-tail-length);
-        opacity: 1;
-      }
-
-      70%,
-      80% {
-        width: 0;
-        opacity: 0.4;
-      }
-
-      100% {
-        width: 0;
-        opacity: 0;
-      }
-    }
-
-    @keyframes blink {
-      50% {
-        opacity: 0.6;
-      }
-    }
-
-    /* Custom Styles */
-    .form-item label {
-      display: flex;
-      align-items: center;
-      margin-bottom: 8px;
-      font-weight: 500;
+      margin-right: 0;
     }
 
     #apiKeyLink,
@@ -196,18 +243,15 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      color: white;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--js-text);
       padding: 4px 10px;
       border-radius: 12px;
       text-decoration: none;
       font-size: 0.7rem;
       font-weight: 600;
       margin-left: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       transition: all 0.3s ease;
       line-height: normal;
       height: auto;
@@ -215,8 +259,8 @@
 
     #apiKeyLink:hover,
     #referralLink:hover {
-      background: rgba(255, 255, 255, 0.2);
-      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(31, 215, 162, 0.2);
+      border-color: rgba(31, 215, 162, 0.4);
       transform: translateY(-1px);
       box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
     }
@@ -227,131 +271,128 @@
     }
 
     .discord-btn::part(base) {
-      background-color: #5865F2;
-      border-color: #5865F2;
-      color: white;
+      background-color: transparent;
+      border-color: rgba(255, 255, 255, 0.2);
+      color: var(--js-text);
       font-weight: 600;
       display: flex;
       align-items: center;
+      gap: 6px;
     }
 
     .discord-btn::part(base):hover {
-      background-color: #4752C4;
-      border-color: #4752C4;
+      border-color: var(--js-accent);
+      color: var(--js-accent);
     }
 
     .heart-button {
       position: fixed;
-      top: 20px;
-      right: 20px;
+      top: 22px;
+      right: 22px;
       z-index: 1000;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 50%;
-      width: 45px;
-      height: 45px;
+      background: rgba(15, 22, 24, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 12px;
+      width: 44px;
+      height: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       transition: all 0.3s ease;
       padding: 0;
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
     }
 
     .heart-button:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: scale(1.1);
+      border-color: var(--js-warm);
+      transform: translateY(-2px);
     }
 
     .heart-button sl-icon {
-      color: #ff4757;
-      font-size: 1.4rem;
+      color: var(--js-warm);
+      font-size: 1.3rem;
       display: flex;
     }
 
-    @keyframes heartbeat {
-      0% {
-        transform: scale(1);
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    body.ready .header {
+      animation: rise 0.8s ease both;
+    }
+
+    body.ready .form-container {
+      animation: rise 0.9s ease both;
+      animation-delay: 0.1s;
+    }
+
+    .form-item,
+    sl-details,
+    .centered-item {
+      opacity: 0;
+    }
+
+    body.ready .form-item,
+    body.ready sl-details,
+    body.ready .centered-item {
+      animation: fadeUp 0.6s ease both;
+    }
+
+    body.ready .form-grid .form-item:nth-child(1) { animation-delay: 0.12s; }
+    body.ready .form-grid .form-item:nth-child(2) { animation-delay: 0.18s; }
+    body.ready .form-grid .form-item:nth-child(3) { animation-delay: 0.24s; }
+    body.ready .form-grid .form-item:nth-child(4) { animation-delay: 0.3s; }
+    body.ready .form-grid .form-item:nth-child(5) { animation-delay: 0.36s; }
+    body.ready .form-grid .form-item:nth-child(6) { animation-delay: 0.42s; }
+    body.ready sl-details { animation-delay: 0.5s; }
+    body.ready .centered-item { animation-delay: 0.62s; }
+
+    @media screen and (max-width: 780px) {
+      .header {
+        padding: 22px;
+        text-align: left;
       }
 
-      14% {
-        transform: scale(1.1);
+      .form-container {
+        padding: 1.5rem;
       }
 
-      28% {
-        transform: scale(1);
+      .centered-item {
+        justify-content: stretch;
       }
 
-      42% {
-        transform: scale(1.1);
-      }
-
-      70% {
-        transform: scale(1);
+      .centered-item sl-button {
+        width: 100%;
       }
     }
   </style>
 </head>
 
 <body>
-  <div class="stars"></div>
-
-  <script>
-    let hasTouchScreen = false;
-    if ("maxTouchPoints" in navigator) {
-      hasTouchScreen = navigator.maxTouchPoints > 0;
-    } else if ("msMaxTouchPoints" in navigator) {
-      hasTouchScreen = navigator.msMaxTouchPoints > 0;
-    } else {
-      const mQ = matchMedia?.("(pointer:coarse)");
-      if (mQ?.media === "(pointer:coarse)") {
-        hasTouchScreen = !!mQ.matches;
-      } else if ("orientation" in window) {
-        hasTouchScreen = true;
-      } else {
-        const UA = navigator.userAgent;
-        hasTouchScreen =
-          /\b(BlackBerry|webOS|iPhone|IEMobile)\b/i.test(UA) ||
-          /\b(Android|Windows Phone|iPad|iPod)\b/i.test(UA);
-      }
-    }
-
-    if (!hasTouchScreen) {
-      document.addEventListener("DOMContentLoaded", function () {
-        const starsContainer = document.querySelector(".stars");
-        const starCount = 30;
-
-        for (let i = 0; i < starCount; i++) {
-          const star = document.createElement("div");
-          star.classList.add("star");
-
-          const randomTopOffset = Math.random() * 100;
-          const randomLeftOffset = 80 + Math.random() * 40;
-          const randomTailLength = 5 + Math.random() * 2.5;
-          const randomFallDuration = 6 + Math.random() * 6;
-
-          star.style.setProperty("--top-offset", `${randomTopOffset}vh`);
-          star.style.setProperty(
-            "--star-tail-length",
-            `${randomTailLength}em`
-          );
-          star.style.setProperty("--fall-duration", `${randomFallDuration}s`);
-          star.style.setProperty("--fall-delay", "0s");
-          star.style.transform = `translate3d(${randomLeftOffset}em, 0, 0)`;
-
-          starsContainer.appendChild(star);
-        }
-      });
-    }
-  </script>
   <div class="header">
-    <div
-      style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px; height: 50px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
       <p class="comet-text" style="margin: 0; display: flex; align-items: center; line-height: 1;">
-        <img class="emoji" src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f4ab/512.gif"
+        <img class="emoji" src="https://fonts.gstatic.com/s/e/notoemoji/latest/2615/512.gif"
           style="margin-right: 10px;" />
-        Comet Enhanced
+        JavaStream
       </p>
       <sl-button href="https://discord.com/invite/UJEqpT42nb" target="_blank" size="small" pill class="discord-btn"
         style="display: flex; align-items: center;">
@@ -359,10 +400,12 @@
         Discord
       </sl-button>
     </div>
+    <p class="subtitle">Zero-setup Stremio torrent/debrid add-on with a Linux-first manager and web-only configuration.</p>
     {{CUSTOM_HEADER_HTML|safe}}
   </div>
 
   <div class="form-container">
+    <div class="form-grid">
     <!-- <div class="form-item">
         <sl-select
           id="languages_required"
@@ -374,17 +417,17 @@
       </div> -->
 
     <div class="form-item">
-      <sl-select id="languages_preferred" multiple clearable label="Preferred Languages"
+      <sl-select id="languages_preferred" multiple clearable label="Preferred Languages" hoist
         placeholder="Select preferred languages"></sl-select>
     </div>
 
     <div class="form-item">
-      <sl-select id="languages_excluded" multiple clearable label="Excluded Languages"
+      <sl-select id="languages_excluded" multiple clearable label="Excluded Languages" hoist
         placeholder="Select excluded languages"></sl-select>
     </div>
 
     <div class="form-item">
-      <sl-select id="resolutions" multiple clearable label="Resolutions" placeholder="Select resolutions">
+      <sl-select id="resolutions" multiple clearable label="Resolutions" placeholder="Select resolutions" hoist>
         <sl-option value="r2160p">4K - 2160p</sl-option>
         <sl-option value="r1080p">Full HD - 1080p</sl-option>
         <sl-option value="r720p">HD - 720p</sl-option>
@@ -410,7 +453,7 @@
     </div>
 
     <div class="form-item">
-      <sl-select id="debridService" value="torrent" label="Debrid Service" placeholder="Select debrid service">
+      <sl-select id="debridService" value="torrent" label="Debrid Service" placeholder="Select debrid service" hoist>
         <sl-option value="torrent">Torrent</sl-option>
         <sl-option value="torbox">TorBox</sl-option>
         <sl-option value="debrider">Debrider</sl-option>
@@ -434,7 +477,7 @@
     </div>
 
     <div class="form-item">
-      <sl-select id="scrapers" multiple clearable label="Scrapers" 
+      <sl-select id="scrapers" multiple clearable label="Scrapers" hoist
         placeholder="Select scrapers to use"
         help-text="Select which scrapers to use for finding torrents. All scrapers are selected by default."></sl-select>
     </div>
@@ -459,6 +502,7 @@
         </sl-select>
       </div>
     </sl-details>
+    </div>
 
     <script>
       document
@@ -889,7 +933,7 @@
       <div style="font-size: 2.5rem; animation: heartbeat 1.5s ease-in-out infinite;">❤️</div>
       <h3 style="margin: 0;">Support Original Comet</h3>
       <p style="color: var(--sl-color-neutral-500); margin: 0; font-size: 0.9rem;">
-        Comet Enhanced is built on top of the original Comet by g0ldyy. Please consider supporting the original project!
+        JavaStream is built on top of the original Comet by g0ldyy. Please consider supporting the original project!
       </p>
 
       <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 10px;">

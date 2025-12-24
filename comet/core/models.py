@@ -21,8 +21,8 @@ class AppSettings(BaseSettings):
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
-    ADDON_ID: Optional[str] = "stremio.comet.enhanced"
-    ADDON_NAME: Optional[str] = "Comet Enhanced"
+    ADDON_ID: Optional[str] = "stremio.javastream"
+    ADDON_NAME: Optional[str] = "JavaStream"
     FASTAPI_HOST: Optional[str] = "0.0.0.0"
     FASTAPI_PORT: Optional[int] = 8000
     FASTAPI_WORKERS: Optional[int] = 1
@@ -34,7 +34,7 @@ class AppSettings(BaseSettings):
     PUBLIC_METRICS_API: Optional[bool] = False
     DATABASE_TYPE: Optional[str] = "sqlite"
     DATABASE_URL: Optional[str] = "username:password@hostname:port"
-    DATABASE_PATH: Optional[str] = "data/comet.db"
+    DATABASE_PATH: Optional[str] = "data/javastream.db"
     DATABASE_BATCH_SIZE: Optional[int] = 20000
     DATABASE_READ_REPLICA_URLS: List[str] = Field(default_factory=list)
     DATABASE_STARTUP_CLEANUP_INTERVAL: Optional[int] = 3600
@@ -116,11 +116,11 @@ class AppSettings(BaseSettings):
     PROXY_DEBRID_STREAM_DEBRID_DEFAULT_APIKEY: Optional[str] = None
     STREMTHRU_URL: Optional[str] = "https://stremthru.13377001.xyz"
     DISABLE_TORRENT_STREAMS: Optional[bool] = False
-    TORRENT_DISABLED_STREAM_NAME: Optional[str] = "[INFO] Comet"
+    TORRENT_DISABLED_STREAM_NAME: Optional[str] = "[INFO] JavaStream"
     TORRENT_DISABLED_STREAM_DESCRIPTION: Optional[str] = (
         "Direct torrent playback is disabled on this server."
     )
-    TORRENT_DISABLED_STREAM_URL: Optional[str] = "https://comet.fast"
+    TORRENT_DISABLED_STREAM_URL: Optional[str] = "https://javastream.app"
     REMOVE_ADULT_CONTENT: Optional[bool] = False
     BACKGROUND_SCRAPER_ENABLED: Optional[bool] = False
     BACKGROUND_SCRAPER_CONCURRENT_WORKERS: Optional[int] = 1

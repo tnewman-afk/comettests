@@ -145,16 +145,16 @@ async def stream(
         return {
             "streams": [
                 {
-                    "name": "[❌] Comet Enhanced",
+                    "name": "[❌] JavaStream",
                     "description": f"⚠️ OBSOLETE CONFIGURATION, PLEASE RE-CONFIGURE ON {request.url.scheme}://{request.url.netloc} ⚠️",
-                    "url": "https://comet.fast",
+                    "url": "https://javastream.app",
                 }
             ]
         }
 
     if settings.DISABLE_TORRENT_STREAMS and config["debridService"] == "torrent":
         placeholder_stream = {
-            "name": settings.TORRENT_DISABLED_STREAM_NAME or "[INFO] Comet",
+            "name": settings.TORRENT_DISABLED_STREAM_NAME or "[INFO] JavaStream",
             "description": settings.TORRENT_DISABLED_STREAM_DESCRIPTION
             or "Direct torrent playback is disabled on this server.",
         }
@@ -242,9 +242,9 @@ async def stream(
             return {
                 "streams": [
                     {
-                        "name": "[⚠️] Comet Enhanced",
+                        "name": "[⚠️] JavaStream",
                         "description": "Unable to get metadata.",
-                        "url": "https://comet.fast",
+                        "url": "https://javastream.app",
                     }
                 ]
             }
@@ -342,9 +342,9 @@ async def stream(
                     return {
                         "streams": [
                             {
-                                "name": "[🔄] Comet Enhanced",
+                                "name": "[🔄] JavaStream",
                                 "description": "Scraping in progress by another instance, please try again in a few seconds...",
-                                "url": "https://comet.fast",
+                                "url": "https://javastream.app",
                             }
                         ]
                     }
@@ -361,9 +361,9 @@ async def stream(
 
             cached_results.append(
                 {
-                    "name": "[🔄] Comet Enhanced",
+                    "name": "[🔄] JavaStream",
                     "description": "First search for this media - More results will be available in a few seconds...",
-                    "url": "https://comet.fast",
+                    "url": "https://javastream.app",
                 }
             )
 
@@ -406,16 +406,16 @@ async def stream(
             return {
                 "streams": [
                     {
-                        "name": "[⚠️] Comet Enhanced - No Scrapers Configured",
+                        "name": "[⚠️] JavaStream - No Scrapers Configured",
                         "description": (
-                            "No scrapers are enabled in your Comet Enhanced configuration.\n\n"
+                            "No scrapers are enabled in your JavaStream configuration.\n\n"
                             "Option 1: Select scrapers in the web setup when configuring your addon.\n"
                             "Option 2: Enable scrapers in your .env file:\n"
                             f"{scraper_examples}\n\n"
                             f"Your debrid service ({debrid_service}) is configured correctly, "
-                            "but Comet Enhanced needs scrapers to find torrents before checking availability."
+                            "but JavaStream needs scrapers to find torrents before checking availability."
                         ),
-                        "url": "https://comet.fast",
+                        "url": "https://javastream.app",
                     }
                 ]
             }
@@ -482,9 +482,9 @@ async def stream(
         ):
             cached_results.append(
                 {
-                    "name": "[⚠️] Comet Enhanced",
+                    "name": "[⚠️] JavaStream",
                     "description": "Debrid Stream Proxy Password incorrect.\nStreams will not be proxied.",
-                    "url": "https://comet.fast",
+                    "url": "https://javastream.app",
                 }
             )
 
@@ -504,7 +504,7 @@ async def stream(
 
             torrent_title = torrent["title"]
             the_stream = {
-                "name": f"[{debrid_extension}{debrid_emoji}] Comet Enhanced {rtn_data.resolution}",
+                "name": f"[{debrid_extension}{debrid_emoji}] JavaStream {rtn_data.resolution}",
                 "description": format_title(
                     rtn_data,
                     torrent_title,
@@ -514,7 +514,7 @@ async def stream(
                     config["resultFormat"],
                 ),
                 "behaviorHints": {
-                    "bingeGroup": "comet|" + info_hash,
+                    "bingeGroup": "javastream|" + info_hash,
                     "videoSize": torrent["size"],
                     "filename": rtn_data.raw_title,
                 },

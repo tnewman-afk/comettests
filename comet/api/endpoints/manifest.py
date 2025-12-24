@@ -15,7 +15,7 @@ router = APIRouter()
 async def manifest(request: Request, b64config: str = None):
     base_manifest = {
         "id": f"{settings.ADDON_ID}.{''.join(random.choice(string.ascii_letters) for _ in range(4))}",
-        "description": "Stremio's fastest torrent/debrid search add-on.",
+        "description": "JavaStream is a fast torrent/debrid search add-on for Stremio.",
         "version": "2.0.0",
         "catalogs": [],
         "resources": [
@@ -33,7 +33,7 @@ async def manifest(request: Request, b64config: str = None):
 
     config = config_check(b64config)
     if not config:
-        base_manifest["name"] = "❌ | Comet"
+        base_manifest["name"] = "❌ | JavaStream"
         base_manifest["description"] = (
             f"⚠️ OBSOLETE CONFIGURATION, PLEASE RE-CONFIGURE ON {request.url.scheme}://{request.url.netloc} ⚠️"
         )

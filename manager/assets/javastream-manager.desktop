@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=JavaStream Manager
+Comment=Control the JavaStream server and dashboard
+Exec=javastream-manager
+Icon=javastream
+Terminal=false
+Categories=Network;

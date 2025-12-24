@@ -163,7 +163,7 @@ def parse_table_list(table_str: str):
 
 async def main():
     parser = argparse.ArgumentParser(
-        description="Comet Database Import/Export Tool",
+        description="JavaStream Database Import/Export Tool",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

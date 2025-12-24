@@ -6,16 +6,23 @@
       name="viewport"
       content="width=device-width, initial-scale=1, shrink-to-fit=no"
     />
-    <meta content="Comet" property="og:title" />
-    <meta content="Comet Dashboard Login" property="og:description" />
-    <meta content="#6b6ef8" data-react-helmet="true" name="theme-color" />
+    <meta content="JavaStream" property="og:title" />
+    <meta content="JavaStream Dashboard Login" property="og:description" />
+    <meta content="#1fd7a2" data-react-helmet="true" name="theme-color" />
 
-    <title>Comet - Login</title>
+    <title>JavaStream - Login</title>
     <link
       id="favicon"
       rel="icon"
       type="image/x-icon"
       href="https://i.imgur.com/jmVoVMu.jpeg"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;600;700&display=swap"
+      rel="stylesheet"
     />
 
     <link
@@ -28,6 +35,25 @@
     ></script>
 
     <style>
+      :root {
+        color-scheme: dark;
+        --js-bg: #0c1112;
+        --js-panel: rgba(19, 27, 29, 0.9);
+        --js-text: #f4f6f4;
+        --js-muted: #a7b2b0;
+        --js-accent: #1fd7a2;
+        --js-border: rgba(255, 255, 255, 0.1);
+        --js-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+        --sl-color-primary-600: var(--js-accent);
+        --sl-color-primary-700: #12b988;
+        --sl-border-radius-medium: 12px;
+        --sl-input-background-color: rgba(11, 17, 18, 0.7);
+        --sl-input-border-color: rgba(255, 255, 255, 0.12);
+        --sl-input-border-color-focus: rgba(31, 215, 162, 0.6);
+        --sl-input-color: var(--js-text);
+        --sl-input-label-color: var(--js-muted);
+      }
+
       :not(:defined) {
         visibility: hidden;
       }
@@ -39,34 +65,66 @@
         align-items: center;
         min-height: 100vh;
         margin: 0;
-        background: radial-gradient(
-          ellipse at bottom,
-          #25292c 0%,
-          #0c0d13 100%
-        );
-        font-family: system-ui, -apple-system, "Segoe UI", Roboto,
-          "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif,
-          "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
-          "Noto Color Emoji";
+        padding: 40px 18px;
+        background:
+          radial-gradient(900px at 8% -10%, rgba(31, 215, 162, 0.28), transparent 60%),
+          radial-gradient(700px at 92% 8%, rgba(255, 180, 84, 0.2), transparent 60%),
+          linear-gradient(180deg, #0c1112 0%, #0f181a 58%, #0a0f10 100%);
+        font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
         font-size: 1rem;
         font-weight: 400;
+        color: var(--js-text);
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+          linear-gradient(120deg, rgba(255, 255, 255, 0.04), transparent 35%),
+          repeating-linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.04) 0,
+            rgba(255, 255, 255, 0.04) 1px,
+            transparent 1px,
+            transparent 80px
+          );
+        opacity: 0.4;
+        pointer-events: none;
+        z-index: -2;
+      }
+
+      body::after {
+        content: "";
+        position: fixed;
+        width: 420px;
+        height: 420px;
+        right: -140px;
+        bottom: -160px;
+        background: radial-gradient(circle, rgba(31, 215, 162, 0.3), transparent 70%);
+        filter: blur(12px);
+        opacity: 0.9;
+        z-index: -3;
       }
 
       .header {
         text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: 28px;
+        animation: rise 0.8s ease both;
       }
 
       .comet-text {
-        font-size: calc(1.375rem + 1.5vw);
-        font-weight: 500;
-        margin-bottom: 10px;
-        color: #ffffff;
+        font-family: "Space Grotesk", "IBM Plex Sans", sans-serif;
+        font-size: clamp(1.8rem, 2.6vw, 2.6rem);
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: var(--js-text);
+        letter-spacing: -0.02em;
       }
 
       .admin-subtitle {
-        font-size: 1.1rem;
-        color: #9ca3af;
+        font-size: 1rem;
+        color: var(--js-muted);
         margin-bottom: 0;
       }
 
@@ -74,20 +132,25 @@
         width: 1em;
         height: 1em;
         vertical-align: middle;
+        filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3));
       }
 
       .login-container {
-        background-color: #1a1d20;
+        background: var(--js-panel);
         padding: 2.5rem;
-        border-radius: 0.5rem;
-        box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.25);
+        border-radius: 18px;
+        border: 1px solid var(--js-border);
+        box-shadow: var(--js-shadow);
         width: 100%;
-        max-width: 400px;
+        max-width: 420px;
         margin: 0 20px;
+        backdrop-filter: blur(18px);
+        animation: rise 0.9s ease both;
+        animation-delay: 0.1s;
       }
 
       .form-item {
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.4rem;
       }
 
       .login-button {
@@ -98,163 +161,30 @@
         margin-bottom: 1rem;
       }
 
-      .stars {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 120%;
-        transform: rotate(-45deg);
-        z-index: -1;
-      }
-
-      .star {
-        --star-color: var(--primary-color);
-        --star-tail-length: 6em;
-        --star-tail-height: 2px;
-        --star-width: calc(var(--star-tail-length) / 6);
-        --fall-duration: 9s;
-        --tail-fade-duration: var(--fall-duration);
-        position: absolute;
-        top: var(--top-offset);
-        left: 0;
-        width: var(--star-tail-length);
-        height: var(--star-tail-height);
-        color: var(--star-color);
-        background: linear-gradient(45deg, currentColor, transparent);
-        border-radius: 50%;
-        filter: drop-shadow(0 0 6px currentColor);
-        transform: translate3d(104em, 0, 0);
-        animation: fall var(--fall-duration) var(--fall-delay) linear infinite,
-          tail-fade var(--tail-fade-duration) var(--fall-delay) ease-out
-            infinite;
-      }
-
-      @media screen and (max-width: 750px) {
-        .star {
-          animation: fall var(--fall-duration) var(--fall-delay) linear infinite;
-        }
-      }
-
-      .star::before,
-      .star::after {
-        position: absolute;
-        content: "";
-        top: 0;
-        left: calc(var(--star-width) / -2);
-        width: var(--star-width);
-        height: 100%;
-        background: linear-gradient(
-          45deg,
-          transparent,
-          currentColor,
-          transparent
-        );
-        border-radius: inherit;
-        animation: blink 2s linear infinite;
-      }
-
-      .star::before {
-        transform: rotate(45deg);
-      }
-
-      .star::after {
-        transform: rotate(-45deg);
-      }
-
-      @keyframes fall {
-        to {
-          transform: translate3d(-30em, 0, 0);
-        }
-      }
-
-      @keyframes tail-fade {
-        0%,
-        50% {
-          width: var(--star-tail-length);
-          opacity: 1;
-        }
-
-        70%,
-        80% {
-          width: 0;
-          opacity: 0.4;
-        }
-
-        100% {
-          width: 0;
+      @keyframes rise {
+        from {
           opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
       }
-
-      @keyframes blink {
-        50% {
-          opacity: 0.6;
-        }
-      }
+    
     </style>
   </head>
 
   <body>
-    <div class="stars"></div>
-
-    <script>
-      let hasTouchScreen = false;
-      if ("maxTouchPoints" in navigator) {
-        hasTouchScreen = navigator.maxTouchPoints > 0;
-      } else if ("msMaxTouchPoints" in navigator) {
-        hasTouchScreen = navigator.msMaxTouchPoints > 0;
-      } else {
-        const mQ = matchMedia?.("(pointer:coarse)");
-        if (mQ?.media === "(pointer:coarse)") {
-          hasTouchScreen = !!mQ.matches;
-        } else if ("orientation" in window) {
-          hasTouchScreen = true;
-        } else {
-          const UA = navigator.userAgent;
-          hasTouchScreen =
-            /\b(BlackBerry|webOS|iPhone|IEMobile)\b/i.test(UA) ||
-            /\b(Android|Windows Phone|iPad|iPod)\b/i.test(UA);
-        }
-      }
-
-      if (!hasTouchScreen) {
-        document.addEventListener("DOMContentLoaded", function () {
-          const starsContainer = document.querySelector(".stars");
-          const starCount = 30;
-
-          for (let i = 0; i < starCount; i++) {
-            const star = document.createElement("div");
-            star.classList.add("star");
-
-            const randomTopOffset = Math.random() * 100;
-            const randomLeftOffset = 80 + Math.random() * 40;
-            const randomTailLength = 5 + Math.random() * 2.5;
-            const randomFallDuration = 6 + Math.random() * 6;
-
-            star.style.setProperty("--top-offset", `${randomTopOffset}vh`);
-            star.style.setProperty(
-              "--star-tail-length",
-              `${randomTailLength}em`
-            );
-            star.style.setProperty("--fall-duration", `${randomFallDuration}s`);
-            star.style.setProperty("--fall-delay", "0s");
-            star.style.transform = `translate3d(${randomLeftOffset}em, 0, 0)`;
-
-            starsContainer.appendChild(star);
-          }
-        });
-      }
-    </script>
-
     <div class="header">
       <p class="comet-text">
         <img
           class="emoji"
-          src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f4ab/512.gif"
+          src="https://fonts.gstatic.com/s/e/notoemoji/latest/2615/512.gif"
         />
-        Comet
+        JavaStream
       </p>
+      <p class="admin-subtitle">Admin dashboard access</p>
     </div>
 
     <div class="login-container">

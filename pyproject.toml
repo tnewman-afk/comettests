@@ -1,7 +1,7 @@
 [project]
-name = "comet"
+name = "javastream"
 version = "0.1.0"
-description = "Stremio's fastest torrent/debrid search add-on."
+description = "JavaStream is a fast torrent/debrid search add-on for Stremio."
 authors = [
     { name = "Goldy", email = "153996346+g0ldyy@users.noreply.github.com" }
 ]

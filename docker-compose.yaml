@@ -1,14 +1,15 @@
 volumes:
-  comet_data:
+  javastream_data:
 
 services:
-  comet:
-    container_name: comet
-    image: g0ldyy/comet
+  javastream:
+    container_name: javastream
+    image: javastream
+    build: .
     restart: unless-stopped
     ports:
       - "8000:8000"
     env_file:
       - .env
     volumes:
-      - comet_data:/data
+      - javastream_data:/data
