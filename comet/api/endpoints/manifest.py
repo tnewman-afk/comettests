@@ -6,6 +6,7 @@ from fastapi import APIRouter, Request
 from comet.core.config_validation import config_check
 from comet.core.models import settings
 from comet.debrid.manager import get_debrid_extension
+from comet.utils.network import get_base_url
 
 router = APIRouter()
 
@@ -33,9 +34,10 @@ async def manifest(request: Request, b64config: str = None):
 
     config = config_check(b64config)
     if not config:
+        base_url = get_base_url(request)
         base_manifest["name"] = "❌ | JavaStream"
         base_manifest["description"] = (
-            f"⚠️ OBSOLETE CONFIGURATION, PLEASE RE-CONFIGURE ON {request.url.scheme}://{request.url.netloc} ⚠️"
+            f"⚠️ OBSOLETE CONFIGURATION, PLEASE RE-CONFIGURE ON {base_url} ⚠️"
         )
         return base_manifest
 

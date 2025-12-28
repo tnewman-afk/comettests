@@ -15,7 +15,7 @@ from comet.services.debrid import DebridService
 from comet.services.lock import DistributedLock, is_scrape_in_progress
 from comet.services.orchestration import TorrentManager
 from comet.utils.formatting import format_title
-from comet.utils.network import get_client_ip
+from comet.utils.network import get_base_url, get_client_ip
 from comet.utils.parsing import parse_media_id
 
 streams = APIRouter()
@@ -142,11 +142,12 @@ async def stream(
 
     config = config_check(b64config)
     if not config:
+        base_url = get_base_url(request)
         return {
             "streams": [
                 {
                     "name": "[❌] JavaStream",
-                    "description": f"⚠️ OBSOLETE CONFIGURATION, PLEASE RE-CONFIGURE ON {request.url.scheme}://{request.url.netloc} ⚠️",
+                    "description": f"⚠️ OBSOLETE CONFIGURATION, PLEASE RE-CONFIGURE ON {base_url} ⚠️",
                     "url": "https://javastream.app",
                 }
             ]
@@ -522,8 +523,9 @@ async def stream(
                 else:
                     the_stream["sources"] = torrent["sources"]
             else:
+                base_url = get_base_url(request)
                 the_stream["url"] = (
-                    f"{request.url.scheme}://{request.url.netloc}/{b64config}/playback/{info_hash}/{torrent['fileIndex'] if torrent['cached'] and torrent['fileIndex'] is not None else 'n'}/{result_season}/{result_episode}/{quote(torrent_title)}?name={quote(title)}"
+                    f"{base_url}/{b64config}/playback/{info_hash}/{torrent['fileIndex'] if torrent['cached'] and torrent['fileIndex'] is not None else 'n'}/{result_season}/{result_episode}/{quote(torrent_title)}?name={quote(title)}"
                 )
 
             if torrent["cached"]:
