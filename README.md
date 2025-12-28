@@ -41,8 +41,26 @@ To customize your JavaStream experience, see the environment variables in `.env-
 3. On first launch it will ask for this machine's **static LAN IP** (use **Auto-detect** if you're not sure), then open `http://<LAN-IP>:8000/configure`.
 4. Use **Open Admin Dashboard** in the Manager app (or visit `http://<LAN-IP>:8000/admin`) to manage scrapers and service settings.
 
+### Firewall Configuration
+If you cannot access the addon from other devices or get "Failed to fetch" when using your LAN IP, ensure port 8000 is open in your firewall:
+```bash
+sudo ufw allow 8000/tcp
+```
+If you are using a different firewall (like firewalld), use:
+```bash
+sudo firewall-cmd --permanent --add-port=8000/tcp
+sudo firewall-cmd --reload
+```
+
+### Stremio Flatpak Users
+If you installed Stremio via Flatpak, it may be sandboxed and unable to access the local network. Run this command to grant network access:
+```bash
+flatpak override --user --share=network com.stremio.Stremio
+```
+
 ### Notes for other devices
 - For devices on the same LAN, open `http://<LAN-IP>:8000/configure` on that device and install from there.
+- If addon install shows “Failed to fetch”, ensure the addon URL uses your LAN IP (not `0.0.0.0`/`127.0.0.1`); you can also set `PUBLIC_BASE_URL=http://<LAN-IP>:8000` in `.env`.
 - If you are using **Stremio Web** in a browser, addon install over plain `http://<LAN-IP>` may fail (browsers block mixed-content). Use a native Stremio app or put JavaStream behind HTTPS (reverse proxy / tunnel).
 
 ## Self-hosted (from source)

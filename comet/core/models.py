@@ -25,6 +25,7 @@ class AppSettings(BaseSettings):
     ADDON_NAME: Optional[str] = "JavaStream"
     FASTAPI_HOST: Optional[str] = "0.0.0.0"
     FASTAPI_PORT: Optional[int] = 8000
+    PUBLIC_BASE_URL: Optional[str] = None
     FASTAPI_WORKERS: Optional[int] = 1
     USE_GUNICORN: Optional[bool] = True
     GUNICORN_PRELOAD_APP: Optional[bool] = True
@@ -173,6 +174,7 @@ class AppSettings(BaseSettings):
         "ZILEAN_URL",
         "TORRENTIO_URL",
         "MEDIAFUSION_URL",
+        "PUBLIC_BASE_URL",
         "AIOSTREAMS_URL",
         "JACKETTIO_URL",
         "JACKETT_URL",

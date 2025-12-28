@@ -616,11 +616,13 @@ def python_executable() -> str:
 def service_env() -> dict:
     config = load_config()
     server_host, server_port = load_server_settings(config)
+    connect_host = connect_host_for_urls(server_host)
     env = {
         "PYTHONPATH": str(APP_ROOT),
         "DATABASE_PATH": str(DATA_DIR / "javastream.db"),
         "FASTAPI_HOST": "0.0.0.0",
         "FASTAPI_PORT": str(server_port),
+        "PUBLIC_BASE_URL": f"http://{connect_host}:{server_port}",
     }
     xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
     if xdg_config_home:

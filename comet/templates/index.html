@@ -609,6 +609,11 @@
         <strong>The Stremio addon link has been automatically copied.</strong>
       </sl-alert>
 
+      <div style="margin-top: 20px; font-size: 0.9em; color: var(--js-muted); word-break: break-all;">
+        <p><strong>Manual Installation:</strong> If the Install button fails, copy the link above and paste it into the Stremio search bar.</p>
+        <code id="debug-url" style="display: block; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px;">...</code>
+      </div>
+
       <script type="module">
         const languagesEmojis = {
           "multi": "🌎",
@@ -702,7 +707,34 @@
         populateSelect("languages_preferred", Object.keys(languagesEmojis));
 
         document.body.classList.add("ready");
-              });
+        checkConnectivity();
+      });
+
+        async function checkConnectivity() {
+          const target = getAddonBaseOrigin() + "/manifest.json";
+          try {
+            const response = await fetch(target);
+            if (!response.ok) throw new Error("Network response was not ok");
+            console.log("Connectivity check passed:", target);
+          } catch (error) {
+            console.error("Connectivity check failed:", target, error);
+            const alert = document.createElement('sl-alert');
+            alert.variant = 'warning';
+            alert.open = true;
+            alert.closable = true;
+            alert.style.marginBottom = '20px';
+            alert.innerHTML = `
+              <sl-icon slot="icon" name="exclamation-triangle"></sl-icon>
+              <div>
+                <strong>Connection Warning</strong><br>
+                Your browser cannot reach the addon at <code>${target}</code>.<br>
+                This usually means a firewall is blocking the connection.<br>
+                Stremio will likely fail to install. Please check the Firewall section in the README.
+              </div>
+            `;
+            document.body.prepend(alert);
+          }
+        }
 
         function populateSelect(selectId, options) {
           const selectElement = document.getElementById(selectId);
@@ -779,6 +811,24 @@
         const copyLinkButton = document.querySelector("#copy-link");
         const copyAlert = document.querySelector('#copyAlert');
 
+        const publicBaseUrl = {{ publicBaseUrl|tojson }};
+        const detectedLanIp = {{ detectedLanIp|tojson }};
+
+        const localHostnames = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "::"]);
+
+        function getAddonBaseOrigin() {
+          if (publicBaseUrl) {
+            return publicBaseUrl;
+          }
+
+          if (detectedLanIp && localHostnames.has(window.location.hostname)) {
+            const port = window.location.port ? `:${window.location.port}` : "";
+            return `${window.location.protocol}//${detectedLanIp}${port}`;
+          }
+
+          return window.location.origin;
+        }
+
         function getSettings() {
           // const languages_required = Array.from(document.getElementById("languages_required").selectedOptions).map(option => option.value);
           const languages_excluded = Array.from(document.getElementById("languages_excluded").selectedOptions).map(option => option.value);
@@ -846,9 +896,14 @@
 	        copyLinkButton.addEventListener("click", () => {
 	          const settings = getSettings();
 	          const settingsString = toBase64Url(JSON.stringify(settings))
+            const manifestUrl = `${getAddonBaseOrigin()}/${settingsString}/manifest.json`;
+
+            // Update debug URL display
+            const debugUrlEl = document.getElementById("debug-url");
+            if (debugUrlEl) debugUrlEl.textContent = manifestUrl;
 
 	          const textArea = document.createElement("textarea");
-	          textArea.value = `${window.location.origin}/${settingsString}/manifest.json`;
+	          textArea.value = manifestUrl;
 	          document.body.appendChild(textArea);
           textArea.focus();
           textArea.select();
@@ -863,7 +918,12 @@
 		        installButton.addEventListener("click", () => {
 		          const settings = getSettings();
 		          const settingsString = toBase64Url(JSON.stringify(settings))
-		          const manifestUrl = `${window.location.origin}/${settingsString}/manifest.json`;
+		          const manifestUrl = `${getAddonBaseOrigin()}/${settingsString}/manifest.json`;
+              
+              // Update debug URL display
+              const debugUrlEl = document.getElementById("debug-url");
+              if (debugUrlEl) debugUrlEl.textContent = manifestUrl;
+
 		          window.location.href = `stremio:///addons?addon=${encodeURIComponent(manifestUrl)}`;
 		          console.log(settingsString);
 		          installAlert.toast();
