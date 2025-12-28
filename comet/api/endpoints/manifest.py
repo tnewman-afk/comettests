@@ -14,6 +14,9 @@ router = APIRouter()
 @router.get("/manifest.json")
 @router.get("/{b64config}/manifest.json")
 async def manifest(request: Request, b64config: str = None):
+    # Get the base URL that should be used for all addon requests
+    base_url = get_base_url(request)
+    
     base_manifest = {
         "id": settings.ADDON_ID,
         "description": "JavaStream is a fast torrent/debrid search add-on for Stremio.",
@@ -30,11 +33,11 @@ async def manifest(request: Request, b64config: str = None):
         "logo": "https://i.imgur.com/jmVoVMu.jpeg",
         "background": "https://i.imgur.com/WwnXB3k.jpeg",
         "behaviorHints": {"configurable": True, "configurationRequired": False},
+        "transportUrl": base_url,
     }
 
     config = config_check(b64config)
     if not config:
-        base_url = get_base_url(request)
         base_manifest["name"] = "❌ | JavaStream"
         base_manifest["description"] = (
             f"⚠️ OBSOLETE CONFIGURATION, PLEASE RE-CONFIGURE ON {base_url} ⚠️"

@@ -60,7 +60,8 @@ flatpak override --user --share=network com.stremio.Stremio
 
 ### Notes for other devices
 - For devices on the same LAN, open `http://<LAN-IP>:8000/configure` on that device and install from there.
-- If addon install shows “Failed to fetch”, ensure the addon URL uses your LAN IP (not `0.0.0.0`/`127.0.0.1`); you can also set `PUBLIC_BASE_URL=http://<LAN-IP>:8000` in `.env`.
+- JavaStream automatically detects your LAN IP and uses it in the addon manifest, ensuring network accessibility.
+- If addon install shows “Failed to fetch”, ensure the addon URL uses your LAN IP (not `0.0.0.0`/`127.0.0.1`); you can also set `PUBLIC_BASE_URL=http://<LAN-IP>:8000` in `.env` to override auto-detection.
 - If you are using **Stremio Web** in a browser, addon install over plain `http://<LAN-IP>` may fail (browsers block mixed-content). Use a native Stremio app or put JavaStream behind HTTPS (reverse proxy / tunnel).
 
 ## Self-hosted (from source)
