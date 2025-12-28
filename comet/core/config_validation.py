@@ -1,4 +1,5 @@
 import base64
+import binascii
 
 import orjson
 
@@ -7,9 +8,23 @@ from comet.core.models import (ConfigModel, default_config,
                                settings)
 
 
+def _decode_config_payload(b64config: str) -> dict:
+    text = (b64config or "").strip()
+    if not text:
+        raise ValueError("Empty config")
+
+    normalized = text.replace("-", "+").replace("_", "/")
+    padding = "=" * (-len(normalized) % 4)
+    try:
+        raw = base64.b64decode(normalized + padding)
+    except binascii.Error:
+        raw = base64.urlsafe_b64decode(text + ("=" * (-len(text) % 4)))
+    return orjson.loads(raw.decode())
+
+
 def config_check(b64config: str):
     try:
-        config = orjson.loads(base64.b64decode(b64config).decode())
+        config = _decode_config_payload(b64config)
 
         validated_config = ConfigModel(**config)
         validated_config = validated_config.model_dump()

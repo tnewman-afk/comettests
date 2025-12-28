@@ -14,7 +14,7 @@ router = APIRouter()
 @router.get("/{b64config}/manifest.json")
 async def manifest(request: Request, b64config: str = None):
     base_manifest = {
-        "id": f"{settings.ADDON_ID}.{''.join(random.choice(string.ascii_letters) for _ in range(4))}",
+        "id": settings.ADDON_ID,
         "description": "JavaStream is a fast torrent/debrid search add-on for Stremio.",
         "version": "2.0.0",
         "catalogs": [],
@@ -38,6 +38,11 @@ async def manifest(request: Request, b64config: str = None):
             f"⚠️ OBSOLETE CONFIGURATION, PLEASE RE-CONFIGURE ON {request.url.scheme}://{request.url.netloc} ⚠️"
         )
         return base_manifest
+
+    if b64config:
+        suffix = "".join(ch for ch in str(b64config) if ch.isalnum())[:8]
+        if suffix:
+            base_manifest["id"] = f"{settings.ADDON_ID}.{suffix}"
 
     debrid_extension = get_debrid_extension(config["debridService"])
     base_manifest["name"] = (

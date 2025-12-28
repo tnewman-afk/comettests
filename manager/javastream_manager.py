@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import os
+import secrets
 import shutil
 import signal
 import socket
@@ -20,9 +22,12 @@ from tkinter import messagebox, ttk
 
 APP_TITLE = "JavaStream Manager"
 SERVICE_NAME = "javastream.service"
-DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
 POLL_INTERVAL_MS = 2000
+
+
+def generate_admin_password(length: int = 18) -> str:
+    return secrets.token_urlsafe(length)
 
 
 def resolve_app_root() -> Path:
@@ -145,6 +150,7 @@ SCRAPER_DEFINITIONS = [
         "key": "zilean",
         "name": "Zilean",
         "enable_env": "SCRAPE_ZILEAN",
+        "enable_default": True,
         "fields": [
             {
                 "env": "ZILEAN_URL",
@@ -196,6 +202,7 @@ SCRAPER_DEFINITIONS = [
         "key": "torrentio",
         "name": "Torrentio",
         "enable_env": "SCRAPE_TORRENTIO",
+        "enable_default": True,
         "fields": [
             {
                 "env": "TORRENTIO_URL",
@@ -367,14 +374,109 @@ class ManagerState:
 STATE = ManagerState.load()
 
 
+WILDCARD_HOSTS = {"0.0.0.0", "::", "[::]"}
+
+
+def auto_detect_lan_ip() -> str:
+    for target in (("8.8.8.8", 80), ("1.1.1.1", 80)):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.connect(target)
+                candidate = sock.getsockname()[0]
+            ip = ipaddress.ip_address(candidate)
+            if isinstance(ip, ipaddress.IPv4Address) and not ip.is_loopback:
+                return str(ip)
+        except OSError:
+            continue
+        except ValueError:
+            continue
+
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None):
+            candidate = info[4][0]
+            try:
+                ip = ipaddress.ip_address(candidate)
+            except ValueError:
+                continue
+            if (
+                isinstance(ip, ipaddress.IPv4Address)
+                and (ip.is_private or ip.is_global)
+                and not ip.is_loopback
+            ):
+                return str(ip)
+    except OSError:
+        pass
+
+    return ""
+
+
+def validate_server_host(host: str) -> bool:
+    value = str(host).strip()
+    if not value:
+        return False
+    if value == "localhost":
+        return True
+    if value in WILDCARD_HOSTS:
+        return True
+    try:
+        ip = ipaddress.ip_address(value)
+    except ValueError:
+        return False
+    return isinstance(ip, ipaddress.IPv4Address)
+
+
+def load_server_settings(config: dict) -> tuple[str, int]:
+    server = config.get("server")
+    host = ""
+    port = DEFAULT_PORT
+    if isinstance(server, dict):
+        host = str(server.get("host", "")).strip()
+        port = server.get("port", DEFAULT_PORT)
+
+    if not validate_server_host(host):
+        detected = auto_detect_lan_ip()
+        host = detected if detected else "127.0.0.1"
+
+    try:
+        port = int(port)
+    except (TypeError, ValueError):
+        port = DEFAULT_PORT
+    if not (1 <= port <= 65535):
+        port = DEFAULT_PORT
+
+    return host, port
+
+
+def connect_host_for_urls(host: str) -> str:
+    value = str(host).strip()
+    if value in WILDCARD_HOSTS or not value:
+        detected = auto_detect_lan_ip()
+        return detected if detected else "127.0.0.1"
+    return value
+
+
+def status_probe_hosts(host: str) -> list[str]:
+    value = str(host).strip()
+    probes: list[str] = []
+    if value and value not in WILDCARD_HOSTS:
+        probes.append(value)
+    probes.append("127.0.0.1")
+    return list(dict.fromkeys(probes))
+
+
 def build_default_config() -> dict:
-    config = {"admin_password": "", "scrapers": {}}
+    detected_ip = auto_detect_lan_ip()
+    config = {
+        "admin_password": generate_admin_password(),
+        "server": {"host": detected_ip if detected_ip else "127.0.0.1", "port": DEFAULT_PORT},
+        "scrapers": {},
+    }
     for scraper in SCRAPER_DEFINITIONS:
         fields = {}
         for field in scraper["fields"]:
             fields[field["env"]] = field.get("default", "")
         config["scrapers"][scraper["key"]] = {
-            "enabled": scraper.get("enable_default", False),
+            "enabled": bool(scraper.get("enable_default", False)),
             "fields": fields,
         }
     return config
@@ -383,6 +485,7 @@ def build_default_config() -> dict:
 def load_config() -> dict:
     config = build_default_config()
     if not CONFIG_FILE.exists():
+        save_config(config)
         return config
     try:
         data = json.loads(CONFIG_FILE.read_text())
@@ -393,6 +496,15 @@ def load_config() -> dict:
         admin_password = data.get("admin_password")
         if isinstance(admin_password, str):
             config["admin_password"] = admin_password
+
+        server = data.get("server")
+        if isinstance(server, dict):
+            host = server.get("host")
+            port = server.get("port")
+            if isinstance(host, str):
+                config["server"]["host"] = host
+            if port is not None:
+                config["server"]["port"] = port
 
         scrapers = data.get("scrapers")
         if isinstance(scrapers, dict):
@@ -408,6 +520,10 @@ def load_config() -> dict:
                     for field_key in scraper_config["fields"]:
                         if field_key in fields:
                             scraper_config["fields"][field_key] = fields[field_key]
+
+    if not str(config.get("admin_password", "")).strip():
+        config["admin_password"] = generate_admin_password()
+        save_config(config)
 
     return config
 
@@ -498,13 +614,21 @@ def python_executable() -> str:
 
 
 def service_env() -> dict:
+    config = load_config()
+    server_host, server_port = load_server_settings(config)
     env = {
         "PYTHONPATH": str(APP_ROOT),
         "DATABASE_PATH": str(DATA_DIR / "javastream.db"),
-        "FASTAPI_HOST": DEFAULT_HOST,
-        "FASTAPI_PORT": str(DEFAULT_PORT),
+        "FASTAPI_HOST": "0.0.0.0",
+        "FASTAPI_PORT": str(server_port),
     }
-    env.update(build_config_env(load_config()))
+    xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
+    if xdg_config_home:
+        env["XDG_CONFIG_HOME"] = xdg_config_home
+    xdg_data_home = os.environ.get("XDG_DATA_HOME")
+    if xdg_data_home:
+        env["XDG_DATA_HOME"] = xdg_data_home
+    env.update(build_config_env(config))
     return env
 
 
@@ -608,7 +732,8 @@ def read_pid() -> Optional[int]:
 
 def start_fallback() -> None:
     ensure_data_dirs()
-    if is_port_open(DEFAULT_HOST, DEFAULT_PORT):
+    host, port = load_server_settings(load_config())
+    if any(is_port_open(probe_host, port) for probe_host in status_probe_hosts(host)):
         return
     env = os.environ.copy()
     env.update(service_env())
@@ -645,8 +770,7 @@ def stop_fallback() -> None:
 def start_service() -> None:
     ensure_data_dirs()
     if systemd_available():
-        if not is_service_installed():
-            install_service()
+        install_service()
         run_systemctl("daemon-reload")
         run_systemctl("start", SERVICE_NAME)
     else:
@@ -671,24 +795,28 @@ def restart_service() -> None:
 def service_status() -> tuple[bool, str]:
     if systemd_available() and is_service_installed():
         return is_service_active(), "systemd user service"
-    return is_port_open(DEFAULT_HOST, DEFAULT_PORT), "local process"
+    host, port = load_server_settings(load_config())
+    return any(is_port_open(probe_host, port) for probe_host in status_probe_hosts(host)), "local process"
 
 
 def wait_for_server(timeout: float = 15.0) -> bool:
+    host, port = load_server_settings(load_config())
     end_time = time.time() + timeout
     while time.time() < end_time:
-        if is_port_open(DEFAULT_HOST, DEFAULT_PORT):
+        if any(is_port_open(probe_host, port) for probe_host in status_probe_hosts(host)):
             return True
         time.sleep(0.25)
     return False
 
 
 def open_dashboard() -> None:
-    webbrowser.open_new_tab(f"http://{DEFAULT_HOST}:{DEFAULT_PORT}/configure")
+    host, port = load_server_settings(load_config())
+    webbrowser.open_new_tab(f"http://{connect_host_for_urls(host)}:{port}/configure")
 
 
 def open_admin() -> None:
-    webbrowser.open_new_tab(f"http://{DEFAULT_HOST}:{DEFAULT_PORT}/admin")
+    host, port = load_server_settings(load_config())
+    webbrowser.open_new_tab(f"http://{connect_host_for_urls(host)}:{port}/admin")
 
 
 def set_autostart(enabled: bool) -> None:
@@ -731,6 +859,9 @@ def build_ui() -> tk.Tk:
     style.configure("TButton", background="#1fd7a2", foreground="#0b1112")
 
     config = load_config()
+    server_host, server_port = load_server_settings(config)
+    server_host_var = tk.StringVar(value=server_host)
+    server_port_var = tk.StringVar(value=str(server_port))
 
     notebook = ttk.Notebook(root)
     status_frame = ttk.Frame(notebook, padding=18)
@@ -775,12 +906,12 @@ def build_ui() -> tk.Tk:
     open_button = ttk.Button(link_row, text="Open Dashboard")
     open_button.pack(side="left", padx=(0, 8))
 
-    open_admin_button = ttk.Button(link_row, text="Open Admin")
+    open_admin_button = ttk.Button(link_row, text="Open Admin Dashboard")
     open_admin_button.pack(side="left")
 
     info_label = ttk.Label(
         status_frame,
-        text=f"Server: http://{DEFAULT_HOST}:{DEFAULT_PORT} (configure at /configure)",
+        text="Server: --",
         foreground="#9fb1ad",
     )
     info_label.pack(anchor="w", pady=(8, 0))
@@ -798,6 +929,42 @@ def build_ui() -> tk.Tk:
     service_var = tk.BooleanVar(value=is_service_installed())
     autostart_var = tk.BooleanVar(value=is_service_enabled())
     admin_password_var = tk.StringVar(value=config.get("admin_password", ""))
+
+    network_frame = ttk.LabelFrame(settings_frame, text="Network", padding=12)
+    network_frame.pack(fill="x", pady=(12, 0))
+    network_frame.columnconfigure(1, weight=1)
+
+    host_label = ttk.Label(network_frame, text="LAN IP address")
+    host_label.grid(row=0, column=0, sticky="w", padx=(0, 12))
+
+    host_entry = ttk.Entry(network_frame, textvariable=server_host_var)
+    host_entry.grid(row=0, column=1, sticky="ew")
+
+    def handle_autodetect_host() -> None:
+        detected = auto_detect_lan_ip()
+        if not detected:
+            messagebox.showwarning(
+                APP_TITLE,
+                "Could not auto-detect a LAN IPv4 address.\n\nEnter your static IP manually (example: 192.168.1.10).",
+            )
+            return
+        server_host_var.set(detected)
+
+    autodetect_button = ttk.Button(network_frame, text="Auto-detect", command=handle_autodetect_host)
+    autodetect_button.grid(row=0, column=2, padx=(8, 0))
+
+    port_label = ttk.Label(network_frame, text="Port")
+    port_label.grid(row=1, column=0, sticky="w", padx=(0, 12), pady=(10, 0))
+
+    port_entry = ttk.Entry(network_frame, textvariable=server_port_var, width=10)
+    port_entry.grid(row=1, column=1, sticky="w", pady=(10, 0))
+
+    network_hint = ttk.Label(
+        network_frame,
+        text="Set this to the machine's static LAN IP so other devices can reach JavaStream.",
+        foreground="#9fb1ad",
+    )
+    network_hint.grid(row=2, column=0, columnspan=3, sticky="w", pady=(8, 0))
 
     service_check = ttk.Checkbutton(
         settings_frame,
@@ -917,9 +1084,33 @@ def build_ui() -> tk.Tk:
     scrapers_save_button = ttk.Button(scrapers_action_frame, text="Save Scraper Settings")
     scrapers_save_button.pack(side="right")
 
+    def update_info_label() -> None:
+        host, port = load_server_settings(load_config())
+        info_label.config(
+            text=f"Server: http://{connect_host_for_urls(host)}:{port} (configure at /configure)"
+        )
+
     def collect_config_from_ui() -> Optional[dict]:
         new_config = build_default_config()
         new_config["admin_password"] = admin_password_var.get().strip()
+
+        host_text = server_host_var.get().strip()
+        if not validate_server_host(host_text):
+            messagebox.showerror(
+                APP_TITLE,
+                "Invalid LAN IP address.\n\nEnter a non-loopback IPv4 address (example: 192.168.1.10), or use 0.0.0.0.",
+            )
+            return None
+        port_text = server_port_var.get().strip()
+        try:
+            port_value = int(port_text)
+        except ValueError:
+            messagebox.showerror(APP_TITLE, "Invalid port number.")
+            return None
+        if not (1 <= port_value <= 65535):
+            messagebox.showerror(APP_TITLE, "Port must be between 1 and 65535.")
+            return None
+        new_config["server"] = {"host": host_text, "port": port_value}
 
         for scraper in SCRAPER_DEFINITIONS:
             scraper_key = scraper["key"]
@@ -979,6 +1170,13 @@ def build_ui() -> tk.Tk:
             return
 
         save_config(new_config)
+        update_info_label()
+        generated_password = None
+        if not str(new_config.get("admin_password", "")).strip():
+            updated_config = load_config()
+            generated_password = str(updated_config.get("admin_password", "")).strip() or None
+            if generated_password:
+                admin_password_var.set(generated_password)
 
         if systemd_available() and is_service_installed():
             install_service()
@@ -987,17 +1185,26 @@ def build_ui() -> tk.Tk:
                 if messagebox.askyesno(APP_TITLE, "Restart JavaStream to apply changes?"):
                     restart_service()
         else:
-            if is_port_open(DEFAULT_HOST, DEFAULT_PORT):
+            host, port = load_server_settings(load_config())
+            if any(is_port_open(probe_host, port) for probe_host in status_probe_hosts(host)):
                 if messagebox.askyesno(APP_TITLE, "Restart JavaStream to apply changes?"):
                     restart_service()
 
-        messagebox.showinfo(APP_TITLE, "Settings saved.")
+        if generated_password:
+            messagebox.showinfo(
+                APP_TITLE,
+                "Settings saved.\n\nA new admin password was generated:\n"
+                f"{generated_password}",
+            )
+        else:
+            messagebox.showinfo(APP_TITLE, "Settings saved.")
 
     def refresh_status() -> None:
         running, mode = service_status()
         status_label.config(text="Running" if running else "Stopped")
         status_canvas.itemconfigure(status_dot, fill="#1fd7a2" if running else "#ff5c5c")
         mode_label.config(text=f"Mode: {mode}")
+        update_info_label()
         root.after(POLL_INTERVAL_MS, refresh_status)
 
     def handle_start() -> None:
@@ -1062,7 +1269,102 @@ def build_ui() -> tk.Tk:
 
     refresh_status()
 
-    root.after(600, ensure_first_launch)
+    def prompt_first_launch_network_setup() -> None:
+        if STATE.first_launch_done:
+            return
+
+        dialog = tk.Toplevel(root)
+        dialog.title("Network Setup")
+        dialog.resizable(False, False)
+        dialog.transient(root)
+        dialog.grab_set()
+
+        container = ttk.Frame(dialog, padding=18)
+        container.pack(fill="both", expand=True)
+
+        title = ttk.Label(
+            container,
+            text="Set your machine's static LAN IP",
+            font=("TkDefaultFont", 12, "bold"),
+        )
+        title.pack(anchor="w")
+
+        subtitle = ttk.Label(
+            container,
+            text="Other devices on your network will use this address to connect.",
+            foreground="#9fb1ad",
+        )
+        subtitle.pack(anchor="w", pady=(4, 12))
+
+        form = ttk.Frame(container)
+        form.pack(fill="x")
+        form.columnconfigure(1, weight=1)
+
+        dialog_host = tk.StringVar(value=server_host_var.get().strip() or connect_host_for_urls(server_host))
+        dialog_port = tk.StringVar(value=server_port_var.get().strip() or str(server_port))
+
+        ttk.Label(form, text="LAN IP address").grid(row=0, column=0, sticky="w", padx=(0, 12))
+        dialog_host_entry = ttk.Entry(form, textvariable=dialog_host)
+        dialog_host_entry.grid(row=0, column=1, sticky="ew")
+
+        def dialog_autodetect() -> None:
+            detected = auto_detect_lan_ip()
+            if detected:
+                dialog_host.set(detected)
+            else:
+                messagebox.showwarning(
+                    APP_TITLE,
+                    "Could not auto-detect a LAN IPv4 address.\n\nEnter your static IP manually (example: 192.168.1.10).",
+                )
+
+        ttk.Button(form, text="Auto-detect", command=dialog_autodetect).grid(row=0, column=2, padx=(8, 0))
+
+        ttk.Label(form, text="Port").grid(row=1, column=0, sticky="w", padx=(0, 12), pady=(10, 0))
+        ttk.Entry(form, textvariable=dialog_port, width=10).grid(row=1, column=1, sticky="w", pady=(10, 0))
+
+        def save_and_close() -> None:
+            host_text = dialog_host.get().strip()
+            if not validate_server_host(host_text):
+                messagebox.showerror(
+                    APP_TITLE,
+                    "Invalid LAN IP address.\n\nEnter a non-loopback IPv4 address (example: 192.168.1.10), or use 0.0.0.0.",
+                )
+                return
+            try:
+                port_value = int(dialog_port.get().strip())
+            except ValueError:
+                messagebox.showerror(APP_TITLE, "Invalid port number.")
+                return
+            if not (1 <= port_value <= 65535):
+                messagebox.showerror(APP_TITLE, "Port must be between 1 and 65535.")
+                return
+
+            server_host_var.set(host_text)
+            server_port_var.set(str(port_value))
+            updated = load_config()
+            updated["server"] = {"host": host_text, "port": port_value}
+            save_config(updated)
+            update_info_label()
+            dialog.destroy()
+
+        def cancel() -> None:
+            dialog.destroy()
+
+        actions = ttk.Frame(container)
+        actions.pack(fill="x", pady=(14, 0))
+        ttk.Button(actions, text="Continue", command=save_and_close).pack(side="right")
+        ttk.Button(actions, text="Cancel", command=cancel).pack(side="right", padx=(0, 8))
+
+        dialog_host_entry.focus_set()
+        root.wait_window(dialog)
+
+    def ensure_first_launch_with_setup() -> None:
+        if STATE.first_launch_done:
+            return
+        prompt_first_launch_network_setup()
+        ensure_first_launch()
+
+    root.after(600, ensure_first_launch_with_setup)
 
     return root
 

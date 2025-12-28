@@ -48,7 +48,7 @@
       --sl-input-border-color-focus: rgba(31, 215, 162, 0.6);
       --sl-input-color: var(--js-text);
       --sl-input-label-color: var(--js-muted);
-      --sl-z-index-dropdown: 10000;
+      --sl-z-index-dropdown: 30000;
     }
 
     :not(:defined) {
@@ -226,12 +226,12 @@
     }
 
     sl-select[open] {
-      z-index: 20000;
+      z-index: 40000;
     }
 
     sl-select::part(popup),
     sl-select::part(listbox) {
-      z-index: 10000;
+      z-index: 35000;
     }
 
     .margin-left-install {
@@ -476,10 +476,14 @@
       <sl-input id="debridApiKey" placeholder="Enter API key"></sl-input>
     </div>
 
-    <div class="form-item">
-      <sl-select id="scrapers" multiple clearable label="Scrapers" hoist
-        placeholder="Select scrapers to use"
-        help-text="Select which scrapers to use for finding torrents. All scrapers are selected by default."></sl-select>
+    <div class="form-item" style="grid-column: 1 / -1;">
+      <sl-alert variant="neutral" open>
+        <sl-icon slot="icon" name="info-circle"></sl-icon>
+        Scrapers are configured server-wide. Use the Admin Dashboard or JavaStream Manager to enable/disable scrapers.
+        <sl-button href="/admin" target="_blank" size="small" pill style="margin-left: 10px;">
+          Open Admin Dashboard
+        </sl-button>
+      </sl-alert>
     </div>
 
     <sl-details summary="Advanced Settings">
@@ -657,7 +661,6 @@
           "la": "💃🏻",  // Latino
         };
         let defaultResultFormat = [];
-        let defaultScrapers = [];
 
         document.addEventListener("DOMContentLoaded", async () => {
           await Promise.allSettled([
@@ -680,12 +683,6 @@
         defaultResultFormat = webConfig.resultFormat;
         const resultFormatSelect = document.getElementById("resultFormat");
         resultFormatSelect.value = defaultResultFormat;
-
-        // Populate scrapers select
-        populateSelect("scrapers", webConfig.availableScrapers);
-        defaultScrapers = webConfig.availableScrapers;
-        const scrapersSelect = document.getElementById("scrapers");
-        scrapersSelect.value = defaultScrapers;
 
         // try populate the form from previous settings
         try {
@@ -803,7 +800,6 @@
           const allowEnglishInLanguages = document.getElementById("allowEnglishInLanguages").checked;
           const removeUnknownLanguages = document.getElementById("removeUnknownLanguages").checked;
           const resultFormat = Array.from(document.getElementById("resultFormat").selectedOptions).map(option => option.value);
-          const scrapers = Array.from(document.getElementById("scrapers").selectedOptions).map(option => option.value);
           const debridService = document.getElementById("debridService").value;
           const debridApiKey = document.getElementById("debridApiKey").value;
           const debridStreamProxyPassword = document.getElementById("debridStreamProxyPassword").value;
@@ -812,17 +808,12 @@
           const selectedResultFormat = resultFormat.length === defaultResultFormat.length && 
                                         resultFormat.every((val) => defaultResultFormat.includes(val)) && 
                                         defaultResultFormat.every((val) => resultFormat.includes(val)) ? ["all"] : resultFormat;
-          const selectedScrapers = scrapers.length === defaultScrapers.length && 
-                                    scrapers.every((val) => defaultScrapers.includes(val)) && 
-                                    defaultScrapers.every((val) => scrapers.includes(val)) ? ["all"] : scrapers;
-
           return {
             maxResultsPerResolution: parseInt(maxResultsPerResolution),
             maxSize: parseFloat(maxSize * 1073741824),
             cachedOnly: cachedOnly,
             removeTrash: removeTrash,
             resultFormat: selectedResultFormat,
-            scrapers: selectedScrapers,
             debridService: debridService,
             debridApiKey: debridApiKey,
             debridStreamProxyPassword: debridStreamProxyPassword,
@@ -840,13 +831,25 @@
           };
         }
 
-        copyLinkButton.addEventListener("click", () => {
-          const settings = getSettings();
-          const settingsString = btoa(JSON.stringify(settings))
+	        function toBase64Url(text) {
+	          return btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+	        }
 
-          const textArea = document.createElement("textarea");
-          textArea.value = `${window.location.origin}/${settingsString}/manifest.json`;
-          document.body.appendChild(textArea);
+	        function fromBase64Url(text) {
+	          let base64 = text.replace(/-/g, "+").replace(/_/g, "/");
+	          while (base64.length % 4) {
+	            base64 += "=";
+	          }
+	          return atob(base64);
+	        }
+
+	        copyLinkButton.addEventListener("click", () => {
+	          const settings = getSettings();
+	          const settingsString = toBase64Url(JSON.stringify(settings))
+
+	          const textArea = document.createElement("textarea");
+	          textArea.value = `${window.location.origin}/${settingsString}/manifest.json`;
+	          document.body.appendChild(textArea);
           textArea.focus();
           textArea.select();
           document.execCommand("copy");
@@ -857,28 +860,29 @@
           copyAlert.toast();
         });
 
-        installButton.addEventListener("click", () => {
-          const settings = getSettings();
-          const settingsString = btoa(JSON.stringify(settings))
-          window.location.href = `stremio://${window.location.host}/${settingsString}/manifest.json`;
-          console.log(settingsString);
-          installAlert.toast();
-        });
+		        installButton.addEventListener("click", () => {
+		          const settings = getSettings();
+		          const settingsString = toBase64Url(JSON.stringify(settings))
+		          const manifestUrl = `${window.location.origin}/${settingsString}/manifest.json`;
+		          window.location.href = `stremio:///addons?addon=${encodeURIComponent(manifestUrl)}`;
+		          console.log(settingsString);
+		          installAlert.toast();
+		        });
 
-        function getSettingsFromUrl() {
-          const url = window.location.href;
-          // Try parse settings from the URL
-          if (url.split("/").length < 5) {
-            console.log("no previous settings"); return null;
-          }
-          const settingsString = url.split("/")[3];
-          if (typeof settingsString === "undefined") {
-            console.log("can't fetch previous settings", settingsString)
-            return null;
-          }
-          const settingsJson = atob(settingsString);
-          return JSON.parse(settingsJson);
-        }
+	        function getSettingsFromUrl() {
+	          const url = window.location.href;
+	          // Try parse settings from the URL
+	          if (url.split("/").length < 5) {
+	            console.log("no previous settings"); return null;
+	          }
+	          const settingsString = url.split("/")[3];
+	          if (typeof settingsString === "undefined") {
+	            console.log("can't fetch previous settings", settingsString)
+	            return null;
+	          }
+	          const settingsJson = fromBase64Url(settingsString);
+	          return JSON.parse(settingsJson);
+	        }
 
         function populateFormFromSettings(settings) {
           if (settings.cachedOnly !== null)
@@ -897,8 +901,6 @@
             document.getElementById("debridStreamProxyPassword").value = settings.debridStreamProxyPassword;
           if (settings.resultFormat !== null && settings.resultFormat !== "all")
             document.getElementById("resultFormat").value = settings.resultFormat;
-          if (settings.scrapers !== null && settings.scrapers !== "all" && Array.isArray(settings.scrapers))
-            document.getElementById("scrapers").value = settings.scrapers;
           if (settings.languages) {
             // if (settings.languages.required)
             //     document.getElementById("languages_required").value = settings.languages.required;

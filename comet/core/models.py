@@ -687,7 +687,7 @@ class ConfigModel(BaseModel):
     debridService: Optional[str] = "torrent"
     debridApiKey: Optional[str] = ""
     debridStreamProxyPassword: Optional[str] = ""
-    scrapers: Optional[List[str]] = ["all"]
+    scrapers: Optional[List[str]] = None
     languages: Optional[dict] = rtn_settings_default_dumped["languages"]
     resolutions: Optional[dict] = rtn_settings_default_dumped["resolutions"]
     options: Optional[dict] = rtn_settings_default_dumped["options"]
