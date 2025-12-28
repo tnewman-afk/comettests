@@ -814,18 +814,22 @@
         const publicBaseUrl = {{ publicBaseUrl|tojson }};
         const detectedLanIp = {{ detectedLanIp|tojson }};
 
-        const localHostnames = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "::"]);
+        // Hostnames that should trigger use of detected LAN IP
+        const localHostnames = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "::", "[::]"]);
 
         function getAddonBaseOrigin() {
+          // Priority 1: Use PUBLIC_BASE_URL if configured
           if (publicBaseUrl) {
             return publicBaseUrl;
           }
 
-          if (detectedLanIp && localHostnames.has(window.location.hostname)) {
+          // Priority 2: If accessing from localhost/wildcard, use detected LAN IP
+          if (localHostnames.has(window.location.hostname) && detectedLanIp) {
             const port = window.location.port ? `:${window.location.port}` : "";
             return `${window.location.protocol}//${detectedLanIp}${port}`;
           }
 
+          // Priority 3: Use current origin if it's a valid network address
           return window.location.origin;
         }
 

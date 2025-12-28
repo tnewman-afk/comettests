@@ -5,6 +5,8 @@ from functools import lru_cache
 import aiohttp
 from fastapi import Request
 
+from comet.core.models import settings
+
 NO_CACHE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
     "Pragma": "no-cache",
@@ -76,8 +78,6 @@ def get_base_url(request: Request) -> str:
     Returns:
         Base URL string (e.g., "http://192.168.1.10:8000")
     """
-    from comet.core.models import settings
-    
     # First priority: use PUBLIC_BASE_URL if configured
     if settings.PUBLIC_BASE_URL:
         return settings.PUBLIC_BASE_URL.rstrip("/")
