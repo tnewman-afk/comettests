@@ -80,7 +80,7 @@ cat <<'EOF_SCRIPT' > "$BIN_DIR/javastream-server"
 set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PYTHONPATH="$ROOT_DIR/app"
-export FASTAPI_HOST="${FASTAPI_HOST:-127.0.0.1}"
+export FASTAPI_HOST="${FASTAPI_HOST:-0.0.0.0}"
 export FASTAPI_PORT="${FASTAPI_PORT:-8000}"
 export DATABASE_PATH="${DATABASE_PATH:-$HOME/.local/share/javastream/javastream.db}"
 exec "$ROOT_DIR/venv/bin/python" -m comet.main

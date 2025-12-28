@@ -265,16 +265,7 @@ async def stream(
         media_only_id = id
 
         debrid_service = config["debridService"]
-        
-        # Extract enabled scrapers from config (if user selected specific ones)
-        scrapers_config = config.get("scrapers")
         enabled_scrapers = None
-        if scrapers_config is not None:
-            if scrapers_config == ["all"] or scrapers_config == "all":
-                # "all" from the web UI means enable every scraper, even without .env toggles
-                enabled_scrapers = scraper_manager.get_scraper_names()
-            else:
-                enabled_scrapers = scrapers_config
 
         debrid_service_instance = DebridService(
             config["debridService"],

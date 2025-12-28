@@ -12,9 +12,9 @@ JavaStream is a fork of Comet with better ease of use. It is designed for Linux 
 - Distributed as `.deb`, `.tar.gz`, and `.AppImage`
 
 ## Enhanced Features
-- **Web UI-only configuration**: configure scrapers directly from the setup interface without editing `.env` files
-- **Simplified setup**: select and enable scrapers with a few clicks
-- **Flexible configuration**: web UI selections override `.env` settings
+- **Manager + Admin Dashboard configuration**: configure scrapers and service settings from the Manager app or the `/admin` dashboard
+- **Clean addon setup UI**: `/configure` focuses on per-addon preferences (debrid, languages, resolutions)
+- **Consistent config storage**: scraper settings stay in sync between the Manager app and Admin Dashboard
 
 ## Original Comet Features
 - Proxy debrid streams for multi-IP usage
@@ -33,12 +33,35 @@ JavaStream is a fork of Comet with better ease of use. It is designed for Linux 
 # Installation
 To customize your JavaStream experience, see the environment variables in `.env-sample`.
 
-**Note**: JavaStream lets you configure scrapers entirely through the web UI during addon installation. You only need `.env` files for advanced overrides.
+**Note**: Scrapers are configured server-wide (Admin Dashboard or JavaStream Manager). The `/configure` page is for addon preferences; `.env` is still supported for advanced/self-hosted setups.
 
 ## Zero-setup (Linux)
 1. Download the JavaStream Manager `.deb`, `.tar.gz`, or `.AppImage`.
 2. Launch **JavaStream Manager**.
-3. It will start the server and open `http://127.0.0.1:8000/configure` on first launch.
+3. On first launch it will ask for this machine's **static LAN IP** (use **Auto-detect** if you're not sure), then open `http://<LAN-IP>:8000/configure`.
+4. Use **Open Admin Dashboard** in the Manager app (or visit `http://<LAN-IP>:8000/admin`) to manage scrapers and service settings.
+
+### Firewall Configuration
+If you cannot access the addon from other devices or get "Failed to fetch" when using your LAN IP, ensure port 8000 is open in your firewall:
+```bash
+sudo ufw allow 8000/tcp
+```
+If you are using a different firewall (like firewalld), use:
+```bash
+sudo firewall-cmd --permanent --add-port=8000/tcp
+sudo firewall-cmd --reload
+```
+
+### Stremio Flatpak Users
+If you installed Stremio via Flatpak, it may be sandboxed and unable to access the local network. Run this command to grant network access:
+```bash
+flatpak override --user --share=network com.stremio.Stremio
+```
+
+### Notes for other devices
+- For devices on the same LAN, open `http://<LAN-IP>:8000/configure` on that device and install from there.
+- If addon install shows “Failed to fetch”, ensure the addon URL uses your LAN IP (not `0.0.0.0`/`127.0.0.1`); you can also set `PUBLIC_BASE_URL=http://<LAN-IP>:8000` in `.env`.
+- If you are using **Stremio Web** in a browser, addon install over plain `http://<LAN-IP>` may fail (browsers block mixed-content). Use a native Stremio app or put JavaStream behind HTTPS (reverse proxy / tunnel).
 
 ## Self-hosted (from source)
 - Clone the repository and enter the folder
@@ -55,6 +78,15 @@ To customize your JavaStream experience, see the environment variables in `.env-
     ```sh
     uv run python -m comet.main
     ```
+
+## Building packages
+This repo includes a build script that outputs `.deb`, `.tar.gz`, and `.AppImage` bundles:
+
+```sh
+bash scripts/build_javastream_manager.sh
+```
+
+Artifacts are written to `build/` (the script prints the exact filenames when it finishes).
 
 ### With Docker Compose
 - Copy `deployment/docker-compose.yml` into a directory

@@ -25,6 +25,7 @@ class AppSettings(BaseSettings):
     ADDON_NAME: Optional[str] = "JavaStream"
     FASTAPI_HOST: Optional[str] = "0.0.0.0"
     FASTAPI_PORT: Optional[int] = 8000
+    PUBLIC_BASE_URL: Optional[str] = None
     FASTAPI_WORKERS: Optional[int] = 1
     USE_GUNICORN: Optional[bool] = True
     GUNICORN_PRELOAD_APP: Optional[bool] = True
@@ -173,6 +174,7 @@ class AppSettings(BaseSettings):
         "ZILEAN_URL",
         "TORRENTIO_URL",
         "MEDIAFUSION_URL",
+        "PUBLIC_BASE_URL",
         "AIOSTREAMS_URL",
         "JACKETTIO_URL",
         "JACKETT_URL",
@@ -687,7 +689,7 @@ class ConfigModel(BaseModel):
     debridService: Optional[str] = "torrent"
     debridApiKey: Optional[str] = ""
     debridStreamProxyPassword: Optional[str] = ""
-    scrapers: Optional[List[str]] = ["all"]
+    scrapers: Optional[List[str]] = None
     languages: Optional[dict] = rtn_settings_default_dumped["languages"]
     resolutions: Optional[dict] = rtn_settings_default_dumped["resolutions"]
     options: Optional[dict] = rtn_settings_default_dumped["options"]

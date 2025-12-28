@@ -48,7 +48,7 @@
       --sl-input-border-color-focus: rgba(31, 215, 162, 0.6);
       --sl-input-color: var(--js-text);
       --sl-input-label-color: var(--js-muted);
-      --sl-z-index-dropdown: 10000;
+      --sl-z-index-dropdown: 30000;
     }
 
     :not(:defined) {
@@ -226,12 +226,12 @@
     }
 
     sl-select[open] {
-      z-index: 20000;
+      z-index: 40000;
     }
 
     sl-select::part(popup),
     sl-select::part(listbox) {
-      z-index: 10000;
+      z-index: 35000;
     }
 
     .margin-left-install {
@@ -476,10 +476,14 @@
       <sl-input id="debridApiKey" placeholder="Enter API key"></sl-input>
     </div>
 
-    <div class="form-item">
-      <sl-select id="scrapers" multiple clearable label="Scrapers" hoist
-        placeholder="Select scrapers to use"
-        help-text="Select which scrapers to use for finding torrents. All scrapers are selected by default."></sl-select>
+    <div class="form-item" style="grid-column: 1 / -1;">
+      <sl-alert variant="neutral" open>
+        <sl-icon slot="icon" name="info-circle"></sl-icon>
+        Scrapers are configured server-wide. Use the Admin Dashboard or JavaStream Manager to enable/disable scrapers.
+        <sl-button href="/admin" target="_blank" size="small" pill style="margin-left: 10px;">
+          Open Admin Dashboard
+        </sl-button>
+      </sl-alert>
     </div>
 
     <sl-details summary="Advanced Settings">
@@ -605,6 +609,11 @@
         <strong>The Stremio addon link has been automatically copied.</strong>
       </sl-alert>
 
+      <div style="margin-top: 20px; font-size: 0.9em; color: var(--js-muted); word-break: break-all;">
+        <p><strong>Manual Installation:</strong> If the Install button fails, copy the link above and paste it into the Stremio search bar.</p>
+        <code id="debug-url" style="display: block; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px;">...</code>
+      </div>
+
       <script type="module">
         const languagesEmojis = {
           "multi": "🌎",
@@ -657,7 +666,6 @@
           "la": "💃🏻",  // Latino
         };
         let defaultResultFormat = [];
-        let defaultScrapers = [];
 
         document.addEventListener("DOMContentLoaded", async () => {
           await Promise.allSettled([
@@ -681,12 +689,6 @@
         const resultFormatSelect = document.getElementById("resultFormat");
         resultFormatSelect.value = defaultResultFormat;
 
-        // Populate scrapers select
-        populateSelect("scrapers", webConfig.availableScrapers);
-        defaultScrapers = webConfig.availableScrapers;
-        const scrapersSelect = document.getElementById("scrapers");
-        scrapersSelect.value = defaultScrapers;
-
         // try populate the form from previous settings
         try {
           const settings = getSettingsFromUrl();
@@ -705,7 +707,34 @@
         populateSelect("languages_preferred", Object.keys(languagesEmojis));
 
         document.body.classList.add("ready");
-              });
+        checkConnectivity();
+      });
+
+        async function checkConnectivity() {
+          const target = getAddonBaseOrigin() + "/manifest.json";
+          try {
+            const response = await fetch(target);
+            if (!response.ok) throw new Error("Network response was not ok");
+            console.log("Connectivity check passed:", target);
+          } catch (error) {
+            console.error("Connectivity check failed:", target, error);
+            const alert = document.createElement('sl-alert');
+            alert.variant = 'warning';
+            alert.open = true;
+            alert.closable = true;
+            alert.style.marginBottom = '20px';
+            alert.innerHTML = `
+              <sl-icon slot="icon" name="exclamation-triangle"></sl-icon>
+              <div>
+                <strong>Connection Warning</strong><br>
+                Your browser cannot reach the addon at <code>${target}</code>.<br>
+                This usually means a firewall is blocking the connection.<br>
+                Stremio will likely fail to install. Please check the Firewall section in the README.
+              </div>
+            `;
+            document.body.prepend(alert);
+          }
+        }
 
         function populateSelect(selectId, options) {
           const selectElement = document.getElementById(selectId);
@@ -782,6 +811,24 @@
         const copyLinkButton = document.querySelector("#copy-link");
         const copyAlert = document.querySelector('#copyAlert');
 
+        const publicBaseUrl = {{ publicBaseUrl|tojson }};
+        const detectedLanIp = {{ detectedLanIp|tojson }};
+
+        const localHostnames = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "::"]);
+
+        function getAddonBaseOrigin() {
+          if (publicBaseUrl) {
+            return publicBaseUrl;
+          }
+
+          if (detectedLanIp && localHostnames.has(window.location.hostname)) {
+            const port = window.location.port ? `:${window.location.port}` : "";
+            return `${window.location.protocol}//${detectedLanIp}${port}`;
+          }
+
+          return window.location.origin;
+        }
+
         function getSettings() {
           // const languages_required = Array.from(document.getElementById("languages_required").selectedOptions).map(option => option.value);
           const languages_excluded = Array.from(document.getElementById("languages_excluded").selectedOptions).map(option => option.value);
@@ -803,7 +850,6 @@
           const allowEnglishInLanguages = document.getElementById("allowEnglishInLanguages").checked;
           const removeUnknownLanguages = document.getElementById("removeUnknownLanguages").checked;
           const resultFormat = Array.from(document.getElementById("resultFormat").selectedOptions).map(option => option.value);
-          const scrapers = Array.from(document.getElementById("scrapers").selectedOptions).map(option => option.value);
           const debridService = document.getElementById("debridService").value;
           const debridApiKey = document.getElementById("debridApiKey").value;
           const debridStreamProxyPassword = document.getElementById("debridStreamProxyPassword").value;
@@ -812,17 +858,12 @@
           const selectedResultFormat = resultFormat.length === defaultResultFormat.length && 
                                         resultFormat.every((val) => defaultResultFormat.includes(val)) && 
                                         defaultResultFormat.every((val) => resultFormat.includes(val)) ? ["all"] : resultFormat;
-          const selectedScrapers = scrapers.length === defaultScrapers.length && 
-                                    scrapers.every((val) => defaultScrapers.includes(val)) && 
-                                    defaultScrapers.every((val) => scrapers.includes(val)) ? ["all"] : scrapers;
-
           return {
             maxResultsPerResolution: parseInt(maxResultsPerResolution),
             maxSize: parseFloat(maxSize * 1073741824),
             cachedOnly: cachedOnly,
             removeTrash: removeTrash,
             resultFormat: selectedResultFormat,
-            scrapers: selectedScrapers,
             debridService: debridService,
             debridApiKey: debridApiKey,
             debridStreamProxyPassword: debridStreamProxyPassword,
@@ -840,13 +881,30 @@
           };
         }
 
-        copyLinkButton.addEventListener("click", () => {
-          const settings = getSettings();
-          const settingsString = btoa(JSON.stringify(settings))
+	        function toBase64Url(text) {
+	          return btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+	        }
 
-          const textArea = document.createElement("textarea");
-          textArea.value = `${window.location.origin}/${settingsString}/manifest.json`;
-          document.body.appendChild(textArea);
+	        function fromBase64Url(text) {
+	          let base64 = text.replace(/-/g, "+").replace(/_/g, "/");
+	          while (base64.length % 4) {
+	            base64 += "=";
+	          }
+	          return atob(base64);
+	        }
+
+	        copyLinkButton.addEventListener("click", () => {
+	          const settings = getSettings();
+	          const settingsString = toBase64Url(JSON.stringify(settings))
+            const manifestUrl = `${getAddonBaseOrigin()}/${settingsString}/manifest.json`;
+
+            // Update debug URL display
+            const debugUrlEl = document.getElementById("debug-url");
+            if (debugUrlEl) debugUrlEl.textContent = manifestUrl;
+
+	          const textArea = document.createElement("textarea");
+	          textArea.value = manifestUrl;
+	          document.body.appendChild(textArea);
           textArea.focus();
           textArea.select();
           document.execCommand("copy");
@@ -857,28 +915,34 @@
           copyAlert.toast();
         });
 
-        installButton.addEventListener("click", () => {
-          const settings = getSettings();
-          const settingsString = btoa(JSON.stringify(settings))
-          window.location.href = `stremio://${window.location.host}/${settingsString}/manifest.json`;
-          console.log(settingsString);
-          installAlert.toast();
-        });
+		        installButton.addEventListener("click", () => {
+		          const settings = getSettings();
+		          const settingsString = toBase64Url(JSON.stringify(settings))
+		          const manifestUrl = `${getAddonBaseOrigin()}/${settingsString}/manifest.json`;
+              
+              // Update debug URL display
+              const debugUrlEl = document.getElementById("debug-url");
+              if (debugUrlEl) debugUrlEl.textContent = manifestUrl;
 
-        function getSettingsFromUrl() {
-          const url = window.location.href;
-          // Try parse settings from the URL
-          if (url.split("/").length < 5) {
-            console.log("no previous settings"); return null;
-          }
-          const settingsString = url.split("/")[3];
-          if (typeof settingsString === "undefined") {
-            console.log("can't fetch previous settings", settingsString)
-            return null;
-          }
-          const settingsJson = atob(settingsString);
-          return JSON.parse(settingsJson);
-        }
+		          window.location.href = `stremio:///addons?addon=${encodeURIComponent(manifestUrl)}`;
+		          console.log(settingsString);
+		          installAlert.toast();
+		        });
+
+	        function getSettingsFromUrl() {
+	          const url = window.location.href;
+	          // Try parse settings from the URL
+	          if (url.split("/").length < 5) {
+	            console.log("no previous settings"); return null;
+	          }
+	          const settingsString = url.split("/")[3];
+	          if (typeof settingsString === "undefined") {
+	            console.log("can't fetch previous settings", settingsString)
+	            return null;
+	          }
+	          const settingsJson = fromBase64Url(settingsString);
+	          return JSON.parse(settingsJson);
+	        }
 
         function populateFormFromSettings(settings) {
           if (settings.cachedOnly !== null)
@@ -897,8 +961,6 @@
             document.getElementById("debridStreamProxyPassword").value = settings.debridStreamProxyPassword;
           if (settings.resultFormat !== null && settings.resultFormat !== "all")
             document.getElementById("resultFormat").value = settings.resultFormat;
-          if (settings.scrapers !== null && settings.scrapers !== "all" && Array.isArray(settings.scrapers))
-            document.getElementById("scrapers").value = settings.scrapers;
           if (settings.languages) {
             // if (settings.languages.required)
             //     document.getElementById("languages_required").value = settings.languages.required;

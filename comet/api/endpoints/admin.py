@@ -1,14 +1,32 @@
+import os
 import secrets
+import shutil
+import subprocess
+import sys
 import time
 import uuid
+from pathlib import Path
 
 import orjson
-from fastapi import APIRouter, Cookie, Form, HTTPException, Request
+from fastapi import APIRouter, Body, Cookie, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from comet.core.logger import log_capture
 from comet.core.models import database, settings
+from comet.javastream_manager_config import (
+    CONFIG_FILE as JAVASTREAM_CONFIG_FILE,
+    DATA_DIR as JAVASTREAM_DATA_DIR,
+    SCRAPER_DEFINITIONS as JAVASTREAM_SCRAPER_DEFINITIONS,
+    SERVICE_FILE as JAVASTREAM_SERVICE_FILE,
+    SERVICE_NAME as JAVASTREAM_SERVICE_NAME,
+    SYSTEMD_USER_DIR as JAVASTREAM_SYSTEMD_USER_DIR,
+    build_config_env as build_javastream_config_env,
+    format_env_value as format_systemd_env_value,
+    generate_admin_password as generate_javastream_admin_password,
+    load_config as load_javastream_config,
+    save_config as save_javastream_config,
+)
 from comet.services.bandwidth import bandwidth_monitor
 from comet.utils.formatting import format_bytes
 
@@ -52,6 +70,132 @@ async def verify_admin_session(admin_session: str = Cookie(None)):
 async def require_admin_auth(admin_session: str = Cookie(None)):
     if not await verify_admin_session(admin_session):
         raise HTTPException(status_code=401, detail="Authentication required")
+
+
+def resolve_app_root() -> Path:
+    env_root = os.environ.get("JAVASTREAM_APP_ROOT")
+    if env_root:
+        env_path = Path(env_root).expanduser()
+        if (env_path / "comet").exists():
+            return env_path
+
+    current_file = Path(__file__).resolve()
+    for parent in current_file.parents:
+        if (parent / "comet").exists():
+            return parent
+    return current_file.parents[0]
+
+
+def python_executable() -> str:
+    return os.environ.get("JAVASTREAM_PYTHON", sys.executable)
+
+
+def systemd_available() -> bool:
+    if not shutil.which("systemctl"):
+        return False
+    try:
+        result = subprocess.run(
+            ["systemctl", "--user", "is-active", "default.target"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return result.returncode in (0, 3)
+    except OSError:
+        return False
+
+
+def run_systemctl(*args: str, check: bool = False) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["systemctl", "--user", *args],
+        capture_output=True,
+        text=True,
+        check=check,
+    )
+
+
+def is_service_installed() -> bool:
+    return JAVASTREAM_SERVICE_FILE.exists()
+
+
+def is_service_active() -> bool:
+    if not systemd_available() or not is_service_installed():
+        return False
+    result = run_systemctl("is-active", JAVASTREAM_SERVICE_NAME)
+    return result.returncode == 0
+
+
+def is_service_enabled() -> bool:
+    if not systemd_available() or not is_service_installed():
+        return False
+    result = run_systemctl("is-enabled", JAVASTREAM_SERVICE_NAME)
+    return result.returncode == 0
+
+
+def service_env(config: dict) -> dict[str, str]:
+    app_root = resolve_app_root()
+    env = {
+        "PYTHONPATH": str(os.environ.get("PYTHONPATH", str(app_root))),
+        "DATABASE_PATH": str(
+            os.environ.get("DATABASE_PATH", str(JAVASTREAM_DATA_DIR / "javastream.db"))
+        ),
+        "FASTAPI_HOST": str(os.environ.get("FASTAPI_HOST", settings.FASTAPI_HOST)),
+        "FASTAPI_PORT": str(os.environ.get("FASTAPI_PORT", settings.FASTAPI_PORT)),
+    }
+    xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
+    if xdg_config_home:
+        env["XDG_CONFIG_HOME"] = xdg_config_home
+    xdg_data_home = os.environ.get("XDG_DATA_HOME")
+    if xdg_data_home:
+        env["XDG_DATA_HOME"] = xdg_data_home
+    env.update(build_javastream_config_env(config))
+    return env
+
+
+def install_service(config: dict) -> None:
+    JAVASTREAM_SYSTEMD_USER_DIR.mkdir(parents=True, exist_ok=True)
+    env_lines = "\n".join(
+        f"Environment={key}={format_systemd_env_value(value)}"
+        for key, value in sorted(service_env(config).items())
+    )
+    app_root = resolve_app_root()
+    service_contents = """[Unit]
+Description=JavaStream Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory={app_root}
+{env_lines}
+ExecStart={exec_start}
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
+""".format(
+        app_root=app_root,
+        env_lines=env_lines,
+        exec_start=f"{python_executable()} -m comet.main",
+    )
+    JAVASTREAM_SERVICE_FILE.write_text(service_contents)
+
+
+def remove_service() -> None:
+    if JAVASTREAM_SERVICE_FILE.exists():
+        JAVASTREAM_SERVICE_FILE.unlink()
+
+
+def serialize_service_status() -> dict[str, object]:
+    return {
+        "systemd_available": systemd_available(),
+        "installed": is_service_installed(),
+        "enabled": is_service_enabled(),
+        "active": is_service_active(),
+        "service_name": JAVASTREAM_SERVICE_NAME,
+        "service_file": str(JAVASTREAM_SERVICE_FILE),
+        "config_file": str(JAVASTREAM_CONFIG_FILE),
+    }
 
 
 @router.get("/admin")
@@ -396,3 +540,134 @@ async def admin_api_metrics(admin_session: str = Cookie(None)):
     )
 
     return JSONResponse(metrics_data)
+
+
+@router.get("/admin/api/settings")
+async def admin_api_settings(admin_session: str = Cookie(None)):
+    await require_admin_auth(admin_session)
+    config = load_javastream_config(JAVASTREAM_CONFIG_FILE)
+    return JSONResponse(
+        {
+            "config": config,
+            "scraper_definitions": JAVASTREAM_SCRAPER_DEFINITIONS,
+            "service": serialize_service_status(),
+        }
+    )
+
+
+@router.post("/admin/api/settings")
+async def admin_api_update_settings(
+    payload: dict = Body(...), admin_session: str = Cookie(None)
+):
+    await require_admin_auth(admin_session)
+
+    config = load_javastream_config(JAVASTREAM_CONFIG_FILE)
+    incoming_config = payload.get("config") if isinstance(payload, dict) else None
+    restart = bool(payload.get("restart")) if isinstance(payload, dict) else False
+
+    if isinstance(incoming_config, dict):
+        admin_password = incoming_config.get("admin_password")
+        if isinstance(admin_password, str):
+            config["admin_password"] = admin_password.strip()
+            if not config["admin_password"]:
+                config["admin_password"] = generate_javastream_admin_password()
+
+        incoming_scrapers = incoming_config.get("scrapers")
+        if isinstance(incoming_scrapers, dict):
+            for scraper_def in JAVASTREAM_SCRAPER_DEFINITIONS:
+                scraper_key = scraper_def["key"]
+                current = config.get("scrapers", {}).get(scraper_key, {})
+                updated = incoming_scrapers.get(scraper_key, {})
+                if not isinstance(updated, dict):
+                    continue
+
+                enabled = updated.get("enabled")
+                if isinstance(enabled, bool):
+                    current["enabled"] = enabled
+
+                fields = updated.get("fields")
+                if isinstance(fields, dict):
+                    current_fields = current.get("fields", {})
+                    for field_def in scraper_def["fields"]:
+                        env_key = field_def["env"]
+                        if env_key not in fields:
+                            continue
+                        current_fields[env_key] = fields[env_key]
+                    current["fields"] = current_fields
+
+                config.setdefault("scrapers", {})[scraper_key] = current
+
+    save_javastream_config(config, JAVASTREAM_CONFIG_FILE)
+
+    if systemd_available() and is_service_installed():
+        install_service(config)
+        run_systemctl("daemon-reload")
+        if restart:
+            run_systemctl("--no-block", "restart", JAVASTREAM_SERVICE_NAME)
+
+    return JSONResponse(
+        {
+            "config": config,
+            "service": serialize_service_status(),
+            "restart_requested": restart,
+        }
+    )
+
+
+@router.post("/admin/api/restart")
+async def admin_api_restart(admin_session: str = Cookie(None)):
+    await require_admin_auth(admin_session)
+
+    if not systemd_available() or not is_service_installed():
+        raise HTTPException(
+            status_code=400,
+            detail="Restart is only supported when running as a systemd user service. Use JavaStream Manager to restart.",
+        )
+
+    run_systemctl("daemon-reload")
+    run_systemctl("--no-block", "restart", JAVASTREAM_SERVICE_NAME)
+    return JSONResponse({"ok": True})
+
+
+@router.post("/admin/api/service")
+async def admin_api_service(payload: dict = Body(...), admin_session: str = Cookie(None)):
+    await require_admin_auth(admin_session)
+
+    if not systemd_available():
+        raise HTTPException(
+            status_code=400,
+            detail="systemd user services are not available on this host.",
+        )
+
+    action = payload.get("action") if isinstance(payload, dict) else None
+    if action == "install":
+        config = load_javastream_config(JAVASTREAM_CONFIG_FILE)
+        install_service(config)
+        run_systemctl("daemon-reload")
+        run_systemctl("--no-block", "start", JAVASTREAM_SERVICE_NAME)
+        run_systemctl("--no-block", "enable", JAVASTREAM_SERVICE_NAME)
+    elif action == "remove":
+        run_systemctl("--no-block", "disable", JAVASTREAM_SERVICE_NAME)
+        run_systemctl("--no-block", "stop", JAVASTREAM_SERVICE_NAME)
+        remove_service()
+        run_systemctl("daemon-reload")
+    elif action == "enable_autostart":
+        if not is_service_installed():
+            raise HTTPException(status_code=400, detail="Service is not installed.")
+        run_systemctl("--no-block", "enable", JAVASTREAM_SERVICE_NAME)
+    elif action == "disable_autostart":
+        if not is_service_installed():
+            raise HTTPException(status_code=400, detail="Service is not installed.")
+        run_systemctl("--no-block", "disable", JAVASTREAM_SERVICE_NAME)
+    elif action == "start":
+        if not is_service_installed():
+            raise HTTPException(status_code=400, detail="Service is not installed.")
+        run_systemctl("--no-block", "start", JAVASTREAM_SERVICE_NAME)
+    elif action == "stop":
+        if not is_service_installed():
+            raise HTTPException(status_code=400, detail="Service is not installed.")
+        run_systemctl("--no-block", "stop", JAVASTREAM_SERVICE_NAME)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid action.")
+
+    return JSONResponse({"service": serialize_service_status()})

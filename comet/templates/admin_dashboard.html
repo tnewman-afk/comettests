@@ -52,6 +52,7 @@
         --sl-color-neutral-0: #0b1112;
         --sl-color-neutral-1000: #eef3f1;
         --sl-border-radius-medium: 12px;
+        --sl-z-index-dropdown: 10000;
       }
 
       :not(:defined) {
@@ -440,6 +441,113 @@
         border: 1px solid rgba(255, 255, 255, 0.08);
       }
 
+      .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 18px;
+      }
+
+      .settings-card {
+        background: rgba(12, 18, 19, 0.82);
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 18px 20px;
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
+      }
+
+      .settings-card-full {
+        margin-top: 18px;
+      }
+
+      .settings-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+
+      .settings-card-header h3 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+      }
+
+      .settings-card-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .settings-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .settings-row:last-of-type {
+        border-bottom: none;
+      }
+
+      .settings-row-label {
+        color: var(--js-muted);
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .settings-row-value {
+        color: var(--js-text);
+        font-weight: 600;
+        text-align: right;
+      }
+
+      .settings-toggles {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .settings-help {
+        color: var(--js-muted);
+        font-size: 0.9rem;
+        line-height: 1.4;
+        margin-top: 12px;
+      }
+
+      .scraper-settings {
+        margin-top: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .scraper-settings sl-details::part(base) {
+        background: rgba(12, 18, 19, 0.75);
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .scraper-settings sl-details::part(header) {
+        font-weight: 700;
+      }
+
+      .scraper-fields {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 6px 0 2px;
+      }
+
       @media screen and (max-width: 768px) {
         .header {
           align-items: flex-start;
@@ -511,6 +619,10 @@
             <sl-icon name="list-ul"></sl-icon>
             &nbsp;System Logs
           </sl-tab>
+          <sl-tab slot="nav" panel="settings">
+            <sl-icon name="sliders"></sl-icon>
+            &nbsp;Settings
+          </sl-tab>
           <sl-tab slot="nav" panel="metrics">
             <sl-icon name="bar-chart"></sl-icon>
             &nbsp;Metrics
@@ -577,6 +689,7 @@
                     value="5000"
                     size="small"
                     style="width: 120px"
+                    hoist
                   >
                     <sl-option value="1000">1s</sl-option>
                     <sl-option value="2000">2s</sl-option>
@@ -635,7 +748,7 @@
                     <div class="metric-subsection">
                       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <h4 style="margin: 0;">Top Trackers</h4>
-                        <sl-select id="tracker-limit" size="small" value="5" style="width: 110px;">
+                        <sl-select id="tracker-limit" size="small" value="5" style="width: 110px;" hoist>
                           <sl-option value="5">Top 5</sl-option>
                           <sl-option value="10">Top 10</sl-option>
                           <sl-option value="20">Top 20</sl-option>
@@ -737,6 +850,74 @@
               </div>
             </div>
           </sl-tab-panel>
+
+          <sl-tab-panel name="settings">
+            <div class="tab-content">
+              <div class="settings-grid">
+                <div class="settings-card">
+                  <div class="settings-card-header">
+                    <h3><sl-icon name="cpu"></sl-icon> Service</h3>
+                    <div class="settings-card-actions">
+                      <sl-button id="service-restart" variant="primary" size="small">
+                        <sl-icon slot="prefix" name="arrow-repeat"></sl-icon>
+                        Restart
+                      </sl-button>
+                    </div>
+                  </div>
+                  <div class="settings-row">
+                    <div class="settings-row-label">Status</div>
+                    <div id="service-status" class="settings-row-value">Loading...</div>
+                  </div>
+                  <div class="settings-row">
+                    <div class="settings-row-label">Mode</div>
+                    <div id="service-mode" class="settings-row-value">Loading...</div>
+                  </div>
+                  <div class="settings-toggles">
+                    <sl-switch id="service-installed">Run JavaStream as a background service</sl-switch>
+                    <sl-switch id="service-autostart">Start JavaStream on login</sl-switch>
+                  </div>
+                  <div class="settings-help" id="service-help"></div>
+                </div>
+
+                <div class="settings-card">
+                  <div class="settings-card-header">
+                    <h3><sl-icon name="shield-lock"></sl-icon> Admin Dashboard</h3>
+                  </div>
+                  <sl-input
+                    id="admin-password"
+                    type="password"
+                    label="Admin password"
+                    help-text="Used for /admin login. Leave blank to generate a new password (applies after restart)."
+                  ></sl-input>
+                </div>
+              </div>
+
+              <div class="settings-card settings-card-full">
+                <div class="settings-card-header">
+                  <h3><sl-icon name="stack"></sl-icon> Scrapers</h3>
+                  <div class="settings-card-actions">
+                    <sl-button id="settings-save" variant="neutral" size="small">
+                      <sl-icon slot="prefix" name="save"></sl-icon>
+                      Save
+                    </sl-button>
+                    <sl-button id="settings-save-restart" variant="primary" size="small">
+                      <sl-icon slot="prefix" name="arrow-repeat"></sl-icon>
+                      Save & Restart
+                    </sl-button>
+                  </div>
+                </div>
+                <div class="settings-help">
+                  Scrapers are configured server-wide. These settings apply to all Stremio installs that use this JavaStream instance.
+                </div>
+                <div id="scraper-settings" class="scraper-settings"></div>
+              </div>
+
+              <sl-alert id="settings-toast" variant="primary" duration="4000" closable>
+                <sl-icon slot="icon" name="info-circle"></sl-icon>
+                <span id="settings-toast-message"></span>
+              </sl-alert>
+            </div>
+          </sl-tab-panel>
         </sl-tab-group>
       </div>
     </div>
@@ -751,6 +932,8 @@
           customElements.whenDefined("sl-icon"),
           customElements.whenDefined("sl-spinner"),
           customElements.whenDefined("sl-switch"),
+          customElements.whenDefined("sl-input"),
+          customElements.whenDefined("sl-alert"),
           customElements.whenDefined("sl-select"),
           customElements.whenDefined("sl-option"),
         ]);
@@ -765,6 +948,10 @@
       let connectionsInterval;
       let logsInterval;
       let lastLogTimestamp = 0;
+      let settingsLoaded = false;
+      let scraperDefinitions = [];
+      let currentSettingsConfig = null;
+      let currentServiceStatus = null;
 
       function initializeDashboard() {
         // Load initial data
@@ -797,6 +984,22 @@
               updateTorrentsSection(currentMetricsData.torrents);
             }
           });
+
+        document
+          .getElementById("settings-save")
+          .addEventListener("click", () => saveSettings(false));
+        document
+          .getElementById("settings-save-restart")
+          .addEventListener("click", () => saveSettings(true));
+        document
+          .getElementById("service-restart")
+          .addEventListener("click", restartService);
+        document
+          .getElementById("service-installed")
+          .addEventListener("sl-change", toggleServiceInstalled);
+        document
+          .getElementById("service-autostart")
+          .addEventListener("sl-change", toggleServiceAutostart);
 
         // Tab change handler
         document
@@ -840,6 +1043,8 @@
           loadConnections();
         } else if (activePanel === "logs") {
           loadLogs();
+        } else if (activePanel === "settings") {
+          loadSettings();
         } else if (activePanel === "metrics") {
           loadMetrics();
         }
@@ -1077,6 +1282,290 @@
         const div = document.createElement("div");
         div.textContent = text;
         return div.innerHTML;
+      }
+
+      // ⚙️ SETTINGS FUNCTIONS
+      async function loadSettings() {
+        try {
+          const response = await fetch("/admin/api/settings");
+          if (!response.ok) {
+            throw new Error(await response.text());
+          }
+          const data = await response.json();
+          settingsLoaded = true;
+          scraperDefinitions = data.scraper_definitions || [];
+          currentSettingsConfig = data.config || {};
+          currentServiceStatus = data.service || {};
+
+          updateServiceUI(currentServiceStatus);
+          renderSettingsForm();
+        } catch (error) {
+          console.error("Failed to load settings:", error);
+          showSettingsToast("Failed to load settings.");
+        }
+      }
+
+      function updateServiceUI(service) {
+        const statusEl = document.getElementById("service-status");
+        const modeEl = document.getElementById("service-mode");
+        const helpEl = document.getElementById("service-help");
+        const installedSwitch = document.getElementById("service-installed");
+        const autostartSwitch = document.getElementById("service-autostart");
+
+        if (!service || !service.systemd_available) {
+          statusEl.textContent = "Unavailable";
+          modeEl.textContent = "Not running under systemd";
+          helpEl.textContent =
+            "systemd user services are not available here. Use JavaStream Manager to run JavaStream in the background.";
+          installedSwitch.disabled = true;
+          autostartSwitch.disabled = true;
+          return;
+        }
+
+        const activeText = service.active ? "Running" : "Stopped";
+        const installedText = service.installed ? "Installed" : "Not installed";
+        statusEl.textContent = service.installed ? activeText : installedText;
+        modeEl.textContent = service.installed
+          ? `systemd user service (${service.service_name})`
+          : "systemd available";
+
+        installedSwitch.disabled = false;
+        installedSwitch.checked = !!service.installed;
+        autostartSwitch.disabled = !service.installed;
+        autostartSwitch.checked = !!service.enabled;
+        helpEl.textContent = service.service_file
+          ? `Unit file: ${service.service_file}`
+          : "";
+      }
+
+      function renderSettingsForm() {
+        const adminPasswordInput = document.getElementById("admin-password");
+        if (adminPasswordInput && currentSettingsConfig) {
+          adminPasswordInput.value = currentSettingsConfig.admin_password || "";
+        }
+        renderScraperSettings();
+      }
+
+      function renderScraperSettings() {
+        const container = document.getElementById("scraper-settings");
+        if (!container) return;
+        container.innerHTML = "";
+
+        const scrapers = (currentSettingsConfig && currentSettingsConfig.scrapers) || {};
+
+        scraperDefinitions.forEach((scraperDef) => {
+          const scraperKey = scraperDef.key;
+          const scraperState = scrapers[scraperKey] || {};
+          const fieldsState = scraperState.fields || {};
+
+          const details = document.createElement("sl-details");
+          details.setAttribute("summary", scraperDef.name);
+
+          const fieldsWrapper = document.createElement("div");
+          fieldsWrapper.className = "scraper-fields";
+
+          const enabledSwitch = document.createElement("sl-switch");
+          enabledSwitch.id = `scraper-${scraperKey}-enabled`;
+          enabledSwitch.checked = !!scraperState.enabled;
+          enabledSwitch.textContent = "Enabled";
+          fieldsWrapper.appendChild(enabledSwitch);
+
+          (scraperDef.fields || []).forEach((fieldDef) => {
+            const fieldType = fieldDef.type || "string";
+            const envKey = fieldDef.env;
+            const fieldId = `scraper-${scraperKey}-${envKey}`;
+            const currentValue =
+              envKey in fieldsState ? fieldsState[envKey] : fieldDef.default || "";
+
+            if (fieldType === "bool") {
+              const fieldSwitch = document.createElement("sl-switch");
+              fieldSwitch.id = fieldId;
+              fieldSwitch.checked = !!currentValue;
+              fieldSwitch.textContent = fieldDef.label;
+              fieldsWrapper.appendChild(fieldSwitch);
+              return;
+            }
+
+            const input = document.createElement("sl-input");
+            input.id = fieldId;
+            input.label = fieldDef.label;
+            if (fieldDef.hint) {
+              input.setAttribute("help-text", fieldDef.hint);
+            }
+            input.value = currentValue === null || currentValue === undefined ? "" : String(currentValue);
+            input.type = fieldType === "int" ? "number" : fieldDef.placeholder ? "password" : "text";
+            if (fieldType === "int") {
+              input.min = "0";
+              input.inputMode = "numeric";
+            }
+            fieldsWrapper.appendChild(input);
+          });
+
+          details.appendChild(fieldsWrapper);
+          container.appendChild(details);
+        });
+      }
+
+      function collectSettingsFromUI() {
+        const adminPasswordInput = document.getElementById("admin-password");
+        const config = {
+          admin_password: adminPasswordInput ? adminPasswordInput.value : "",
+          scrapers: {},
+        };
+
+        scraperDefinitions.forEach((scraperDef) => {
+          const scraperKey = scraperDef.key;
+          const enabledSwitch = document.getElementById(
+            `scraper-${scraperKey}-enabled`
+          );
+          const enabled = enabledSwitch ? !!enabledSwitch.checked : false;
+          const fields = {};
+
+          (scraperDef.fields || []).forEach((fieldDef) => {
+            const envKey = fieldDef.env;
+            const fieldId = `scraper-${scraperKey}-${envKey}`;
+            const fieldType = fieldDef.type || "string";
+            const fieldEl = document.getElementById(fieldId);
+            if (!fieldEl) return;
+
+            if (fieldType === "bool") {
+              fields[envKey] = !!fieldEl.checked;
+              return;
+            }
+            fields[envKey] = fieldEl.value;
+          });
+
+          config.scrapers[scraperKey] = { enabled, fields };
+        });
+
+        return config;
+      }
+
+      async function saveSettings(restart) {
+        try {
+          const settingsSave = document.getElementById("settings-save");
+          const settingsSaveRestart = document.getElementById("settings-save-restart");
+          settingsSave.disabled = true;
+          settingsSaveRestart.disabled = true;
+
+          const config = collectSettingsFromUI();
+          const response = await fetch("/admin/api/settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ config, restart }),
+          });
+
+          if (!response.ok) {
+            throw new Error(await response.text());
+          }
+
+          const data = await response.json();
+          currentSettingsConfig = data.config || currentSettingsConfig;
+          currentServiceStatus = data.service || currentServiceStatus;
+          updateServiceUI(currentServiceStatus);
+          renderSettingsForm();
+
+          showSettingsToast(restart ? "Saved. Restarting JavaStream…" : "Settings saved.");
+          if (restart) {
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          }
+        } catch (error) {
+          console.error("Failed to save settings:", error);
+          showSettingsToast("Failed to save settings.");
+        } finally {
+          const settingsSave = document.getElementById("settings-save");
+          const settingsSaveRestart = document.getElementById("settings-save-restart");
+          settingsSave.disabled = false;
+          settingsSaveRestart.disabled = false;
+        }
+      }
+
+      async function restartService() {
+        if (!confirm("Restart JavaStream now? Active streams may be interrupted.")) {
+          return;
+        }
+        try {
+          const response = await fetch("/admin/api/restart", { method: "POST" });
+          if (!response.ok) {
+            throw new Error(await response.text());
+          }
+          showSettingsToast("Restart requested. Reloading…");
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } catch (error) {
+          console.error("Failed to restart service:", error);
+          showSettingsToast("Failed to restart JavaStream (use JavaStream Manager).");
+        }
+      }
+
+      async function toggleServiceInstalled(e) {
+        const desired = !!e.target.checked;
+        if (!desired) {
+          const ok = confirm(
+            "Disable the background service? This will stop JavaStream and close this dashboard."
+          );
+          if (!ok) {
+            e.target.checked = true;
+            return;
+          }
+        }
+        try {
+          const response = await fetch("/admin/api/service", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: desired ? "install" : "remove" }),
+          });
+          if (!response.ok) {
+            throw new Error(await response.text());
+          }
+          const data = await response.json();
+          currentServiceStatus = data.service || currentServiceStatus;
+          updateServiceUI(currentServiceStatus);
+          showSettingsToast(desired ? "Service installed." : "Service removed.");
+        } catch (error) {
+          console.error("Failed to update service state:", error);
+          showSettingsToast("Failed to update service state.");
+          if (currentServiceStatus) {
+            e.target.checked = !!currentServiceStatus.installed;
+          }
+        }
+      }
+
+      async function toggleServiceAutostart(e) {
+        const desired = !!e.target.checked;
+        try {
+          const response = await fetch("/admin/api/service", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: desired ? "enable_autostart" : "disable_autostart",
+            }),
+          });
+          if (!response.ok) {
+            throw new Error(await response.text());
+          }
+          const data = await response.json();
+          currentServiceStatus = data.service || currentServiceStatus;
+          updateServiceUI(currentServiceStatus);
+          showSettingsToast(desired ? "Autostart enabled." : "Autostart disabled.");
+        } catch (error) {
+          console.error("Failed to update autostart:", error);
+          showSettingsToast("Failed to update autostart.");
+          if (currentServiceStatus) {
+            e.target.checked = !!currentServiceStatus.enabled;
+          }
+        }
+      }
+
+      function showSettingsToast(message) {
+        const toast = document.getElementById("settings-toast");
+        const toastMessage = document.getElementById("settings-toast-message");
+        if (!toast || !toastMessage) return;
+        toastMessage.textContent = message;
+        toast.toast();
       }
 
       // 📊 METRICS FUNCTIONS

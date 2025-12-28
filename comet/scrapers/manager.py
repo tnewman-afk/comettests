@@ -137,7 +137,7 @@ class ScraperManager:
         if not self.has_enabled_scrapers(request.context, request.enabled_scrapers):
             logger.warning(
                 f"No scrapers are enabled for context '{request.context}'. "
-                "Please select scrapers in the web setup UI or configure at least one scraper in your .env file "
+                "Configure scrapers in the Admin Dashboard (/admin), JavaStream Manager, or your .env file "
                 "(e.g., SCRAPE_TORRENTIO=true, SCRAPE_ZILEAN=true, etc.) "
                 "to fetch torrents. Without scrapers, no results can be found."
             )
